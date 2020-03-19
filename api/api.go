@@ -80,7 +80,7 @@ func (a *API) Sweep() {
 
 func (a *API) NewUploadStream(path string) (*Stream, error) {
 	a.Debugf("creating new upload stream for '%s'", path)
-	s, err := NewUploadStream(a.FileRoot+"/"+path, a.Lease)
+	s, err := NewStream(a.FileRoot+"/"+path, a.Lease)
 	if err != nil {
 		a.Debugf("failed to create new upload stream for '%s': %s", path, err)
 		return nil, err
@@ -109,7 +109,7 @@ func (a *API) GetUploadStream(id string, token string) (*Stream, bool) {
 
 func (a *API) NewDownloadStream(path string) (*Stream, error) {
 	a.Debugf("creating new download stream for '%s'", path)
-	s, err := NewDownloadStream(a.FileRoot+"/"+path, a.Lease)
+	s, err := NewStream(a.FileRoot+"/"+path, a.Lease)
 	if err != nil {
 		a.Debugf("failed to create new download stream for '%s': %s", path, err)
 		return nil, err
@@ -136,15 +136,16 @@ func (a *API) GetDownloadStream(id string, token string) (*Stream, bool) {
 	return s, false
 }
 
-func (a *API) ForgetStream(s *Stream) {
+func (a *API) ForgetUploadStream(s *Stream) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
+	delete(a.uploads, s.ID)
+}
 
-	if s.Disposition == Upload {
-		delete(a.uploads, s.ID)
-	} else {
-		delete(a.downloads, s.ID)
-	}
+func (a *API) ForgetDownloadStream(s *Stream) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	delete(a.downloads, s.ID)
 }
 
 func (a *API) Router() *route.Router {
@@ -231,7 +232,7 @@ func (a *API) Router() *route.Router {
 		}
 		r.Header().Set("Content-Type", "application/octet-stream")
 		r.Stream(out)
-		a.ForgetStream(s)
+		a.ForgetDownloadStream(s)
 	})
 
 	r.Dispatch("POST /upload/:uuid", func(r *route.Request) {
@@ -252,7 +253,7 @@ func (a *API) Router() *route.Router {
 		}
 
 		if in.EOF {
-			a.ForgetStream(s)
+			a.ForgetUploadStream(s)
 			r.Success("upload finished")
 			return
 		}

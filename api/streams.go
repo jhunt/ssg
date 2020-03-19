@@ -15,44 +15,15 @@ const (
 
 type Disposition int
 
-const (
-	Upload Disposition = iota
-	Download
-)
-
 type Stream struct {
-	ID          string
-	Token       Token
-	Disposition Disposition
-	Path        string
-	Received    uint64
+	ID       string
+	Token    Token
+	Path     string
+	Received uint64
+
 }
 
-func NewUploadStream(path string, lifetime time.Duration) (Stream, error) {
-	s, err := newStream(Upload, lifetime)
-	if err != nil {
-		return Stream{}, err
-	}
-
-	s.Path = path
-	return s, nil
-}
-
-func NewDownloadStream(path string, lifetime time.Duration) (Stream, error) {
-	if path == "" {
-		return Stream{}, fmt.Errorf("no path supplied")
-	}
-
-	s, err := newStream(Download, lifetime)
-	if err != nil {
-		return Stream{}, err
-	}
-
-	s.Path = path
-	return s, nil
-}
-
-func newStream(disp Disposition, lifetime time.Duration) (Stream, error) {
+func NewStream(path string, lifetime time.Duration) (Stream, error) {
 	id, err := NewRandomString(StreamIDLength)
 	if err != nil {
 		return Stream{}, err
@@ -64,9 +35,9 @@ func newStream(disp Disposition, lifetime time.Duration) (Stream, error) {
 	}
 
 	return Stream{
-		ID:          id,
-		Token:       tok,
-		Disposition: disp,
+		ID:    id,
+		Token: tok,
+		Path:  path,
 	}, nil
 }
 

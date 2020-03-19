@@ -1,13 +1,13 @@
 package api_test
 
 import (
-	"time"
 	"bytes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"io"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/shieldproject/shield-storage-gateway/api"
 )
@@ -15,21 +15,21 @@ import (
 var _ = Describe("API Streams", func() {
 	Describe("Authorization", func() {
 		It("should authorize a matched token", func() {
-			s, err := api.NewUploadStream("path/to/file", 10 * time.Minute)
+			s, err := api.NewUploadStream("path/to/file", 10*time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(s.Authorize(s.Token.Secret)).Should(BeTrue())
 		})
 
 		It("should not authorize a mismatched token", func() {
-			s, err := api.NewUploadStream("path/to/file", 10 * time.Minute)
+			s, err := api.NewUploadStream("path/to/file", 10*time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(s.Authorize("bad:" + s.Token.Secret)).Should(BeFalse())
 		})
 
 		It("should not authorize an expired token", func() {
-			s, err := api.NewUploadStream("path/to/file", 10 * time.Minute)
+			s, err := api.NewUploadStream("path/to/file", 10*time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 			s.Token.Expire()
 
@@ -46,7 +46,7 @@ var _ = Describe("API Streams", func() {
 			dir, err = ioutil.TempDir("", "apitest")
 			Ω(err).ShouldNot(HaveOccurred())
 
-			s, err = api.NewUploadStream(dir + "/test/path/to/file", 10 * time.Minute)
+			s, err = api.NewUploadStream(dir+"/test/path/to/file", 10*time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 		})
 
@@ -98,7 +98,7 @@ var _ = Describe("API Streams", func() {
 			dir, err = ioutil.TempDir("", "apitest")
 			Ω(err).ShouldNot(HaveOccurred())
 
-			uploader, err = api.NewUploadStream(dir + "/file", 10 * time.Minute)
+			uploader, err = api.NewUploadStream(dir+"/file", 10*time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 			_, err = uploader.UploadChunk(uploader.Token.Secret, []byte("this is the first line\n"))
 			Ω(err).ShouldNot(HaveOccurred())
@@ -109,7 +109,7 @@ var _ = Describe("API Streams", func() {
 		It("should be able to download uploaded files", func() {
 			defer os.RemoveAll(dir)
 
-			s, err := api.NewDownloadStream(uploader.Path, 10 * time.Minute)
+			s, err := api.NewDownloadStream(uploader.Path, 10*time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			out, err := s.Reader(s.Token.Secret)
@@ -124,7 +124,7 @@ var _ = Describe("API Streams", func() {
 		It("should not download file chunks with a bad token", func() {
 			defer os.RemoveAll(dir)
 
-			s, err := api.NewDownloadStream(uploader.Path, 10 * time.Minute)
+			s, err := api.NewDownloadStream(uploader.Path, 10*time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			out, err := s.Reader("INVALID TOKEN")
@@ -135,7 +135,7 @@ var _ = Describe("API Streams", func() {
 		It("should not download file chunks for an expired token", func() {
 			defer os.RemoveAll(dir)
 
-			s, err := api.NewDownloadStream(uploader.Path, 10 * time.Minute)
+			s, err := api.NewDownloadStream(uploader.Path, 10*time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			s.Token.Expire()
