@@ -158,12 +158,11 @@ func (a *API) Router() *route.Router {
 
 		var in struct {
 			Path  string `json:"path"`
-			Agent string `json:"agent"`
 		}
 		if !r.Payload(&in) {
 			return
 		}
-		if r.Missing("path", in.Path) || r.Missing("agent", in.Agent) {
+		if r.Missing("path", in.Path) {
 			return
 		}
 
@@ -191,12 +190,11 @@ func (a *API) Router() *route.Router {
 
 		var in struct {
 			Path  string `json:"path"`
-			Agent string `json:"agent"`
 		}
 		if !r.Payload(&in) {
 			return
 		}
-		if r.Missing("path", in.Path) || r.Missing("agent", in.Agent) {
+		if r.Missing("path", in.Path) {
 			return
 		}
 
