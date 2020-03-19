@@ -1,0 +1,5 @@
+Dockerfile
+Makefile
+.gitignore
+/.git
+/tmp
