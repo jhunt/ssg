@@ -15,6 +15,9 @@ type API struct {
 	Debug    bool
 	Lease    time.Duration
 
+	Control route.BasicAuth
+	Admin   route.BasicAuth
+
 	lock      sync.Mutex
 	uploads   map[string]*Stream
 	downloads map[string]*Stream
@@ -148,6 +151,10 @@ func (a *API) Router() *route.Router {
 	r := &route.Router{}
 
 	r.Dispatch("POST /download", func(r *route.Request) {
+		if !r.BasicAuth(a.Control) {
+			return
+		}
+
 		var in struct {
 			Path  string `json:"path"`
 			Agent string `json:"agent"`
@@ -177,6 +184,10 @@ func (a *API) Router() *route.Router {
 	})
 
 	r.Dispatch("POST /upload", func(r *route.Request) {
+		if !r.BasicAuth(a.Control) {
+			return
+		}
+
 		var in struct {
 			Path  string `json:"path"`
 			Agent string `json:"agent"`
@@ -261,6 +272,10 @@ func (a *API) Router() *route.Router {
 	})
 
 	r.Dispatch("GET /admin/streams", func(r *route.Request) {
+		if !r.BasicAuth(a.Admin) {
+			return
+		}
+
 		a.lock.Lock()
 		defer a.lock.Unlock()
 

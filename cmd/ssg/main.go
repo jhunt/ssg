@@ -28,6 +28,12 @@ func main() {
 		Cleanup int `cli:"-c, --cleanup" env:"SSG_CLEANUP"`
 		Lease   int `cli:"-L, --lease" env:"SSG_LEASE"`
 
+		AdminUsername string `cli:"--admin-username" env:"SSG_ADMIN_USERNAME"`
+		AdminPassword string `cli:"--admin-password" env:"SSG_ADMIN_PASSWORD"`
+
+		ControlUsername string `cli:"--control-username" env:"SSG_CONTROL_USERNAME"`
+		ControlPassword string `cli:"--control-password" env:"SSG_CONTROL_PASSWORD"`
+
 		// eventually: S3 creds
 	}
 
@@ -35,6 +41,10 @@ func main() {
 	opts.Mode = "fs"
 	opts.Cleanup = 5
 	opts.Lease = 600
+	opts.AdminUsername = "admin"
+	opts.AdminPassword = "password"
+	opts.ControlUsername = "control"
+	opts.ControlPassword = "shield"
 
 	env.Override(&opts)
 
@@ -51,29 +61,41 @@ func main() {
 	if opts.Help {
 		fmt.Printf("ssg - The SHIELD Storage Gateway\n\n")
 		fmt.Printf("Options\n")
-		fmt.Printf("  -h, --help       Show this help screen.\n")
-		fmt.Printf("  -v, --version    Display the SSG version.\n")
+		fmt.Printf("  -h, --help          Show this help screen.\n")
+		fmt.Printf("  -v, --version       Display the SSG version.\n")
 		fmt.Printf("\n")
-		fmt.Printf("  -l, --listen     The IP:port on which to bind and listen.\n")
-		fmt.Printf("                   Can be set via the @W{$SSG_LISTEN} env var.\n")
+		fmt.Printf("  -l, --listen        The IP:port on which to bind and listen.\n")
+		fmt.Printf("                      Can be set via the @W{$SSG_LISTEN} env var.\n")
 		fmt.Printf("\n")
-		fmt.Printf("  -L, --lease      How long should tokens for accessing streams\n")
-		fmt.Printf("                   be valid (in seconds).  Every use of a token\n")
-		fmt.Printf("                   renews it by this lease amount.\n")
-		fmt.Printf("                   Defaults to 600 seconds (10 min).\n")
-		fmt.Printf("                   Can be set via the @W{$SSG_LEASE} env var.\n")
+		fmt.Printf("  -L, --lease         How long should tokens for accessing streams\n")
+		fmt.Printf("                      be valid (in seconds).  Every use of a token\n")
+		fmt.Printf("                      renews it by this lease amount.\n")
+		fmt.Printf("                      Defaults to 600 seconds (10 min).\n")
+		fmt.Printf("                      Can be set via the @W{$SSG_LEASE} env var.\n")
 		fmt.Printf("\n")
-		fmt.Printf("  -c, --cleanup    How often (in seconds) to clean up expired.\n")
-		fmt.Printf("                   streams and delete half-uploaded files.\n")
-		fmt.Printf("                   Defaults to 5 seconds.\n")
-		fmt.Printf("                   Can be set via the @W{$SSG_CLEANUP} env var.\n")
+		fmt.Printf("  --admin-username    The credentials for the ADMIN account, which\n")
+		fmt.Printf("  --admin-password    is able to query for SSG internals.  Can be set via\n")
+		fmt.Printf("                      the @W{SSG_ADMIN_USERNAME} and @W{SSG_ADMIN_PASSWORD}\n")
+		fmt.Printf("                      environment variables.\n")
+		fmt.Printf("                      Defaults to admin/password.\n")
 		fmt.Printf("\n")
-		fmt.Printf("  -m, --mode       What mode to operate in for backend storage.\n")
-		fmt.Printf("                   Must be one of 'fs' or 's3'\n")
-		fmt.Printf("                   Can be set via the @W{$SSG_MODE} env var.\n")
+		fmt.Printf("  --control-username  The credentials for the CONTROL account, which\n")
+		fmt.Printf("  --control-password  is able to start new streams.  Can be set via\n")
+		fmt.Printf("                      the @W{SSG_CONTROL_USERNAME} and @W{SSG_CONTROL_PASSWORD}\n")
+		fmt.Printf("                      environment variables.\n")
+		fmt.Printf("                      Defaults to control/shield.\n")
 		fmt.Printf("\n")
-		fmt.Printf("  --file-root      Where to store / find files in --mode 'fs'.\n")
-		fmt.Printf("                   Can be set via the @W{$SSG_FILE_ROOT} env var.\n")
+		fmt.Printf("  -c, --cleanup       How often (in seconds) to clean up expired.\n")
+		fmt.Printf("                      streams and delete half-uploaded files.\n")
+		fmt.Printf("                      Defaults to 5 seconds.\n")
+		fmt.Printf("                      Can be set via the @W{$SSG_CLEANUP} env var.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  -m, --mode          What mode to operate in for backend storage.\n")
+		fmt.Printf("                      Must be one of 'fs' or 's3'\n")
+		fmt.Printf("                      Can be set via the @W{$SSG_MODE} env var.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  --file-root         Where to store / find files in --mode 'fs'.\n")
+		fmt.Printf("                      Can be set via the @W{$SSG_FILE_ROOT} env var.\n")
 		fmt.Printf("\n")
 		os.Exit(0)
 	}
@@ -114,6 +136,10 @@ func main() {
 
 	ssg.Debug = opts.Debug
 	ssg.Lease = time.Duration(opts.Lease) * time.Second
+	ssg.Admin.Username = opts.AdminUsername
+	ssg.Admin.Password = opts.AdminPassword
+	ssg.Control.Username = opts.ControlUsername
+	ssg.Control.Password = opts.ControlPassword
 	http.Handle("/", ssg.Router())
 
 	fmt.Fprintf(os.Stderr, "ssg starting up...\n")
