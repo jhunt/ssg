@@ -24,6 +24,8 @@ github.com/jhunt/go-route v0.0.0-20200319182906-563b6899a347 h1:rd5ayZwkxhuGM8SJ
 github.com/jhunt/go-route v0.0.0-20200319182906-563b6899a347/go.mod h1:gzhIrL8pMIdzl2Bo6IUkzBnZU1U5XaQIBSKU67ClF0s=
 github.com/jhunt/go-route v0.0.0-20200319192915-8fd729f74247 h1:UXlCiDL1DpNMBpSH8PjuLBr9fPRzRPyZHwFdhz/+pGA=
 github.com/jhunt/go-route v0.0.0-20200319192915-8fd729f74247/go.mod h1:gzhIrL8pMIdzl2Bo6IUkzBnZU1U5XaQIBSKU67ClF0s=
+github.com/jhunt/go-s3 v0.0.0-20190122180757-14f44ecac95f h1:ekqEwms7BfsaX1p3YrHdD2/afRmLaTvR1MsTtxwynx0=
+github.com/jhunt/go-s3 v0.0.0-20190122180757-14f44ecac95f/go.mod h1:XIUXI+4yvp0Lq6o6ss6c4xDUitIeG8f/DUMWoy2OGhQ=
 github.com/jhunt/go-snapshot v0.0.0-20171017043618-9ad8f5ee37a2 h1:mGjsfupyBHFg4Gk01Oxw3OHqiBLnIGYbLbaYWRebmgc=
 github.com/jhunt/go-snapshot v0.0.0-20171017043618-9ad8f5ee37a2/go.mod h1:oNu1YULLxQcu77xYyAN0Xb2YbEspiSwDSn9kPW2zRKU=
 github.com/mattn/go-isatty v0.0.12 h1:wuysRhFDzyxgEmMf5xjvJ2M9dZoWAXNNr5LSBS7uHXY=

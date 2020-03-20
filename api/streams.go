@@ -65,6 +65,10 @@ func (s Stream) Expired() bool {
 	return s.token.Expired()
 }
 
+func (s Stream) Close() error {
+	return s.backend.Close()
+}
+
 func (s Stream) Cancel() error {
 	return s.backend.Cancel()
 }

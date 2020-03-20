@@ -34,6 +34,10 @@ func (f *File) Retrieve() (io.ReadCloser, error) {
 	return os.Open(f.path)
 }
 
+func (f *File) Close() error {
+	return nil
+}
+
 func (f *File) Cancel() error {
 	err := os.Remove(f.path)
 	if os.IsNotExist(err) {

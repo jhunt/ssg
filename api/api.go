@@ -2,19 +2,18 @@ package api
 
 import (
 	"encoding/base64"
-	"fmt"
-	"os"
 	"sync"
 	"time"
 
+	"github.com/jhunt/go-log"
 	"github.com/jhunt/go-route"
+	"github.com/jhunt/go-s3"
 
 	"github.com/shieldproject/shield-storage-gateway/backend"
 )
 
 type API struct {
 	FileRoot string
-	Debug    bool
 	Lease    time.Duration
 
 	Control route.BasicAuth
@@ -38,10 +37,8 @@ func (a *API) UseFiles(root string) {
 	a.builder = backend.FileBuilder(root)
 }
 
-func (a *API) Debugf(f string, args ...interface{}) {
-	if a.Debug {
-		fmt.Fprintf(os.Stderr, f+"\n", args...)
-	}
+func (a *API) UseS3(config s3.Client) {
+	a.builder = backend.S3Builder(config)
 }
 
 func (a *API) Sweeper(every time.Duration) {
@@ -52,50 +49,50 @@ func (a *API) Sweeper(every time.Duration) {
 }
 
 func (a *API) Sweep() {
-	a.lock.Lock()
-	defer a.lock.Unlock()
-
 	total := 0
-	cleaned := 0
-	a.Debugf("sweeping to clean out expired upload / download streams...")
+	cancel := make([]*Stream, 0)
+
+	a.lock.Lock()
+	log.Debugf("sweeping to clean out expired upload / download streams...")
 	for id, s := range a.uploads {
 		total += 1
 		if s.Expired() {
-			cleaned += 1
-
-			a.Debugf("canceling upload stream [%s]...", id)
-			go s.Cancel()
-			a.Debugf("clearing out upload stream [%s]...", id)
+			log.Debugf("clearing out upload stream [%s]... it expired on %s", id, s.Expires())
+			cancel = append(cancel, s)
 			delete(a.uploads, id)
 		}
 	}
-
 	for id, s := range a.downloads {
 		total += 1
 		if s.Expired() {
-			cleaned += 1
-			a.Debugf("clearing out download stream [%s]...", id)
+			log.Debugf("clearing out download stream [%s]...", id)
 			delete(a.downloads, id)
 		}
 	}
+	a.lock.Unlock()
 
-	a.Debugf("swept up.  cleared out %d of %d streams", cleaned, total)
+	log.Debugf("swept up.  clearing out %d of %d streams", len(cancel), total)
+	for _, s := range cancel {
+		log.Debugf("canceling upload stream [%s]...", s.ID)
+		s.Cancel()
+	}
+	log.Debugf("done with cleanup.")
 }
 
 func (a *API) NewUploadStream(path string) (*Stream, error) {
-	a.Debugf("creating new upload stream for '%s'", path)
+	log.Debugf("creating new upload stream for '%s'", path)
 	s, err := NewStream(path, a.builder)
 	if err != nil {
-		a.Debugf("failed to create new upload stream for '%s': %s", path, err)
+		log.Debugf("failed to create new upload stream for '%s': %s", path, err)
 		return nil, err
 	}
 
 	if err := s.Lease(a.Lease); err != nil {
-		a.Debugf("failed to lease upload stream [%s]: %s", s.ID, err)
+		log.Debugf("failed to lease upload stream [%s]: %s", s.ID, err)
 		return nil, err
 	}
 
-	a.Debugf("persisting new upload stream as [%s]", s.ID)
+	log.Debugf("persisting new upload stream as [%s]", s.ID)
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.uploads[s.ID] = &s
@@ -103,7 +100,7 @@ func (a *API) NewUploadStream(path string) (*Stream, error) {
 }
 
 func (a *API) GetUploadStream(id string, token string) (*Stream, bool) {
-	a.Debugf("retrieving upload stream [%s]...", id)
+	log.Debugf("retrieving upload stream [%s]...", id)
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -118,19 +115,19 @@ func (a *API) ForgetUploadStream(s *Stream) {
 }
 
 func (a *API) NewDownloadStream(path string) (*Stream, error) {
-	a.Debugf("creating new download stream for '%s'", path)
+	log.Debugf("creating new download stream for '%s'", path)
 	s, err := NewStream(path, a.builder)
 	if err != nil {
-		a.Debugf("failed to create new download stream for '%s': %s", path, err)
+		log.Debugf("failed to create new download stream for '%s': %s", path, err)
 		return nil, err
 	}
 
 	if err := s.Lease(a.Lease); err != nil {
-		a.Debugf("failed to lease download stream [%s]: %s", s.ID, err)
+		log.Debugf("failed to lease download stream [%s]: %s", s.ID, err)
 		return nil, err
 	}
 
-	a.Debugf("persisting new download stream as [%s]", s.ID)
+	log.Debugf("persisting new download stream as [%s]", s.ID)
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.downloads[s.ID] = &s
@@ -138,7 +135,7 @@ func (a *API) NewDownloadStream(path string) (*Stream, error) {
 }
 
 func (a *API) GetDownloadStream(id string, token string) (*Stream, bool) {
-	a.Debugf("retrieving download stream [%s]...", id)
+	log.Debugf("retrieving download stream [%s]...", id)
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -255,6 +252,7 @@ func (a *API) Router() *route.Router {
 		}
 
 		if in.EOF {
+			s.Close()
 			a.ForgetUploadStream(s)
 			r.Success("upload finished")
 			return

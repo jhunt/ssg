@@ -8,22 +8,38 @@ import (
 
 	"github.com/jhunt/go-cli"
 	env "github.com/jhunt/go-envirotron"
+	"github.com/jhunt/go-log"
+	"github.com/jhunt/go-s3"
 
 	"github.com/shieldproject/shield-storage-gateway/api"
 )
 
 var Version = ""
 
+func sanitize(s string) string {
+	runes := []rune(s)
+	for i := 3; i < len(runes)-4; i++ {
+		runes[i] = '-'
+	}
+	return string(runes)
+}
+
 func main() {
 	var opts struct {
 		Help    bool `cli:"-h, --help"`
-		Debug   bool `cli:"-D, --debug"`
 		Version bool `cli:"-v, --version"`
 
-		Listen string `cli:"-l, --listen" env:"SSG_LISTEN"`
+		Debug bool   `cli:"-D, --debug"`
+		Log   string `cli:"-l, --log-level", env:"SSG_LOG_LEVEL"`
+
+		Listen string `cli:"--listen" env:"SSG_LISTEN"`
 
 		Mode     string `cli:"-m, --mode" env:"SSG_MODE"`
 		FileRoot string `cli:"--file-root" env:"SSG_FILE_ROOT"`
+		S3Bucket string `cli:"--s3-bucket" env:"SSG_S3_BUCKET"`
+		S3Region string `cli:"--s3-region" env:"SSG_S3_REGION"`
+		S3AKI    string `cli:"--s3-aki" env:"SSG_S3_AKI"`
+		S3Key    string `cli:"--s3-key" env:"SSG_S3_KEY"`
 
 		Cleanup int `cli:"-c, --cleanup" env:"SSG_CLEANUP"`
 		Lease   int `cli:"-L, --lease" env:"SSG_LEASE"`
@@ -37,8 +53,10 @@ func main() {
 		// eventually: S3 creds
 	}
 
+	opts.Log = "info"
 	opts.Listen = ":3100"
 	opts.Mode = "fs"
+	opts.S3Region = "us-east-1"
 	opts.Cleanup = 5
 	opts.Lease = 600
 	opts.AdminUsername = "admin"
@@ -109,6 +127,14 @@ func main() {
 		os.Exit(0)
 	}
 
+	if opts.Debug {
+		opts.Log = "debug"
+	}
+	log.SetupLogging(log.LogConfig{
+		Type:  "console",
+		Level: opts.Log,
+	})
+
 	if opts.Cleanup < 1 {
 		fmt.Fprintf(os.Stderr, "@R{!! invalid (non-positive) value for --cleanup: %d}\n", opts.Cleanup)
 		os.Exit(1)
@@ -128,15 +154,30 @@ func main() {
 		ssg.UseFiles(opts.FileRoot)
 
 	} else if opts.Mode == "s3" {
-		fmt.Fprintf(os.Stderr, "@Y{not yet finished...}\n")
-		os.Exit(1)
+		if opts.S3AKI == "" {
+			fmt.Fprintf(os.Stderr, "@R{!! no --s3-aki specified for --mode s3}\n")
+			os.Exit(1)
+		}
+		if opts.S3Key == "" {
+			fmt.Fprintf(os.Stderr, "@R{!! no --s3-key specified for --mode s3}\n")
+			os.Exit(1)
+		}
+		if opts.S3Bucket == "" {
+			fmt.Fprintf(os.Stderr, "@R{!! no --s3-bucket specified for --mode s3}\n")
+			os.Exit(1)
+		}
+		ssg.UseS3(s3.Client{
+			Bucket:          opts.S3Bucket,
+			AccessKeyID:     opts.S3AKI,
+			SecretAccessKey: opts.S3Key,
+			Region:          opts.S3Region,
+		})
 
 	} else {
 		fmt.Fprintf(os.Stderr, "@R{!! unrecognized --mode '%s'}\n", opts.Mode)
 		os.Exit(1)
 	}
 
-	ssg.Debug = opts.Debug
 	ssg.Lease = time.Duration(opts.Lease) * time.Second
 	ssg.Admin.Username = opts.AdminUsername
 	ssg.Admin.Password = opts.AdminPassword
@@ -153,7 +194,9 @@ func main() {
 	if opts.Mode == "fs" {
 		fmt.Fprintf(os.Stderr, " - backed by @W{filesystem} at @C{%s}\n", opts.FileRoot)
 	} else {
-		fmt.Fprintf(os.Stderr, " - backed by S3 at ...\n") // FIXME
+		fmt.Fprintf(os.Stderr, " - backed by S3 bucket @C{%s}\n", opts.S3Bucket)
+		fmt.Fprintf(os.Stderr, "   in region @C{%s}\n", opts.S3Region)
+		fmt.Fprintf(os.Stderr, "   accessed via @C{%s}\n", sanitize(opts.S3AKI))
 	}
 	if err := http.ListenAndServe(opts.Listen, nil); err != nil {
 		fmt.Fprintf(os.Stderr, "@R{!! bind %s failed: %s}\n", opts.Listen, err)

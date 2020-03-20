@@ -6,6 +6,8 @@ import (
 
 type Backend interface {
 	io.Writer
+	io.Closer
+
 	Retrieve() (io.ReadCloser, error)
 	Cancel() error
 }
