@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/jhunt/go-route"
+
+	"github.com/shieldproject/shield-storage-gateway/backend"
 )
 
 type API struct {
@@ -18,18 +20,22 @@ type API struct {
 	Control route.BasicAuth
 	Admin   route.BasicAuth
 
+	builder  backend.BackendBuilder
+
 	lock      sync.Mutex
 	uploads   map[string]*Stream
 	downloads map[string]*Stream
 }
 
-func New(path string) API {
+func New() API {
 	return API{
-		FileRoot: path,
-
 		uploads:   make(map[string]*Stream),
 		downloads: make(map[string]*Stream),
 	}
+}
+
+func (a *API) UseFiles(root string) {
+	a.builder = backend.FileBuilder(root)
 }
 
 func (a *API) Debugf(f string, args ...interface{}) {
@@ -56,11 +62,9 @@ func (a *API) Sweep() {
 		total += 1
 		if s.Expired() {
 			cleaned += 1
-			// FIXME in S3 land this may block for a while; best
-			// to move this Stream to a different queue, and let that
-			// happen in a goroutine.
-			a.Debugf("aborting upload stream [%s]...", id)
-			s.Undo()
+
+			a.Debugf("canceling upload stream [%s]...", id)
+			go s.Cancel()
 			a.Debugf("clearing out upload stream [%s]...", id)
 			delete(a.uploads, id)
 		}
@@ -80,9 +84,14 @@ func (a *API) Sweep() {
 
 func (a *API) NewUploadStream(path string) (*Stream, error) {
 	a.Debugf("creating new upload stream for '%s'", path)
-	s, err := NewStream(a.FileRoot+"/"+path, a.Lease)
+	s, err := NewStream(path, a.builder)
 	if err != nil {
 		a.Debugf("failed to create new upload stream for '%s': %s", path, err)
+		return nil, err
+	}
+
+	if err := s.Lease(a.Lease); err != nil {
+		a.Debugf("failed to lease upload stream [%s]: %s", s.ID, err)
 		return nil, err
 	}
 
@@ -99,19 +108,25 @@ func (a *API) GetUploadStream(id string, token string) (*Stream, bool) {
 	defer a.lock.Unlock()
 
 	s, ok := a.uploads[id]
-	if ok && s.Authorize(token) {
-		s.Token.Renew()
-		a.Debugf("renewing token for stream [%s] to %v", s.ID, s.Token.Expires)
-		return s, true
-	}
-	return s, false
+	return s, ok && s.Authorize(token)
+}
+
+func (a *API) ForgetUploadStream(s *Stream) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	delete(a.uploads, s.ID)
 }
 
 func (a *API) NewDownloadStream(path string) (*Stream, error) {
 	a.Debugf("creating new download stream for '%s'", path)
-	s, err := NewStream(a.FileRoot+"/"+path, a.Lease)
+	s, err := NewStream(path, a.builder)
 	if err != nil {
 		a.Debugf("failed to create new download stream for '%s': %s", path, err)
+		return nil, err
+	}
+
+	if err := s.Lease(a.Lease); err != nil {
+		a.Debugf("failed to lease download stream [%s]: %s", s.ID, err)
 		return nil, err
 	}
 
@@ -128,18 +143,7 @@ func (a *API) GetDownloadStream(id string, token string) (*Stream, bool) {
 	defer a.lock.Unlock()
 
 	s, ok := a.downloads[id]
-	if ok && s.Authorize(token) {
-		s.Token.Renew()
-		a.Debugf("renewing token for stream [%s] to %v", s.ID, s.Token.Expires)
-		return s, true
-	}
-	return s, false
-}
-
-func (a *API) ForgetUploadStream(s *Stream) {
-	a.lock.Lock()
-	defer a.lock.Unlock()
-	delete(a.uploads, s.ID)
+	return s, ok && s.Authorize(token)
 }
 
 func (a *API) ForgetDownloadStream(s *Stream) {
@@ -178,8 +182,8 @@ func (a *API) Router() *route.Router {
 			Expires time.Time `json:"expires"`
 		}{
 			ID:      s.ID,
-			Token:   s.Token.Secret,
-			Expires: s.Token.Expires,
+			Token:   s.Token(),
+			Expires: s.Expires(),
 		})
 	})
 
@@ -200,7 +204,7 @@ func (a *API) Router() *route.Router {
 
 		s, err := a.NewUploadStream(in.Path)
 		if err != nil {
-			r.Fail(route.Oops(err, "Unable to create download stream"))
+			r.Fail(route.Oops(err, "Unable to create upload stream"))
 			return
 		}
 
@@ -210,8 +214,8 @@ func (a *API) Router() *route.Router {
 			Expires time.Time `json:"expires"`
 		}{
 			ID:      s.ID,
-			Token:   s.Token.Secret,
-			Expires: s.Token.Expires,
+			Token:   s.Token(),
+			Expires: s.Expires(),
 		})
 	})
 
@@ -223,7 +227,7 @@ func (a *API) Router() *route.Router {
 			return
 		}
 
-		out, err := s.Reader(token)
+		out, err := s.AuthorizedRetrieve(token)
 		if err != nil {
 			r.Fail(route.Oops(err, "failed to read from download stream"))
 			return
@@ -262,7 +266,7 @@ func (a *API) Router() *route.Router {
 			return
 		}
 
-		n, err := s.UploadChunk(token, b)
+		n, err := s.AuthorizedWrite(token, b)
 		if err != nil {
 			r.Fail(route.Oops(err, "unable to upload data to stream"))
 			return
@@ -291,7 +295,7 @@ func (a *API) Router() *route.Router {
 				ID:       s.ID,
 				Path:     s.Path,
 				Received: s.Received,
-				Expires:  s.Token.Expires,
+				Expires:  s.Expires(),
 			})
 		}
 
@@ -300,7 +304,7 @@ func (a *API) Router() *route.Router {
 			downloads = append(downloads, StreamInfo{
 				ID:      s.ID,
 				Path:    s.Path,
-				Expires: s.Token.Expires,
+				Expires: s.Expires(),
 			})
 		}
 

@@ -119,16 +119,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	var ssg api.API
+	ssg := api.New()
 	if opts.Mode == "fs" {
 		if opts.FileRoot == "" {
 			fmt.Fprintf(os.Stderr, "@R{!! no --file-root specified for --mode fs}\n")
 			os.Exit(1)
 		}
-		ssg = api.New(opts.FileRoot)
+		ssg.UseFiles(opts.FileRoot)
+
 	} else if opts.Mode == "s3" {
 		fmt.Fprintf(os.Stderr, "@Y{not yet finished...}\n")
 		os.Exit(1)
+
 	} else {
 		fmt.Fprintf(os.Stderr, "@R{!! unrecognized --mode '%s'}\n", opts.Mode)
 		os.Exit(1)

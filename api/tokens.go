@@ -14,6 +14,8 @@ type Token struct {
 	renewal time.Duration
 }
 
+var ExpiredToken = Token{}
+
 func NewToken(lifetime time.Duration) (Token, error) {
 	secret, err := NewRandomString(TokenLength)
 	if err != nil {

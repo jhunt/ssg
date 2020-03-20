@@ -3,9 +3,9 @@ package api
 import (
 	"fmt"
 	"io"
-	"os"
-	"path"
 	"time"
+
+	"github.com/shieldproject/shield-storage-gateway/backend"
 )
 
 const (
@@ -17,80 +17,71 @@ type Disposition int
 
 type Stream struct {
 	ID       string
-	Token    Token
 	Path     string
 	Received uint64
 
+	token Token
+	backend backend.Backend
 }
 
-func NewStream(path string, lifetime time.Duration) (Stream, error) {
-	id, err := NewRandomString(StreamIDLength)
-	if err != nil {
-		return Stream{}, err
-	}
+func (s Stream) Token() string {
+	return s.token.Secret
+}
 
-	tok, err := NewToken(lifetime)
+func (s Stream) Expires() time.Time {
+	return s.token.Expires
+}
+
+func NewStream(path string, builder backend.BackendBuilder) (Stream, error) {
+	id, err := NewRandomString(StreamIDLength)
 	if err != nil {
 		return Stream{}, err
 	}
 
 	return Stream{
 		ID:    id,
-		Token: tok,
 		Path:  path,
+
+		token:   ExpiredToken,
+		backend: builder(path),
 	}, nil
 }
 
+func (s *Stream) Lease(lifetime time.Duration) error {
+	tok, err := NewToken(lifetime)
+	if err != nil {
+		return err
+	}
+
+	s.token = tok
+	return nil
+}
+
 func (s Stream) Authorize(token string) bool {
-	return s.Token.Secret == token && !s.Token.Expired()
+	return s.token.Secret == token && !s.token.Expired()
 }
 
 func (s Stream) Expired() bool {
-	return s.Token.Expired()
+	return s.token.Expired()
 }
 
-func (s Stream) Undo() error {
-	err := os.Remove(s.Path)
-	if os.IsNotExist(err) {
-		return nil // ENOENT is A-OKAY
-	}
-	return err
+func (s Stream) Cancel() error {
+	return s.backend.Cancel()
 }
 
-func (s *Stream) UploadChunk(token string, b []byte) (int, error) {
+func (s *Stream) AuthorizedWrite(token string, b []byte) (int, error) {
 	if !s.Authorize(token) {
 		return 0, fmt.Errorf("unauthorized attempt to upload")
 	}
-
-	err := os.MkdirAll(path.Dir(s.Path), 0777)
-	if err != nil {
-		return 0, err
-	}
-
-	fmt.Printf("uploading %d bytes to file %s...\n", len(b), s.Path)
-	f, err := os.OpenFile(s.Path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
-	if err != nil {
-		return 0, err
-	}
-	defer f.Close()
-
-	n, err := f.Write(b)
-	if err != nil {
-		return n, err
-	}
-
-	s.Received += uint64(n)
-
-	if n != len(b) {
-		return n, fmt.Errorf("short write: had %d bytes but only wrote %d!", len(b), n)
-	}
-
-	return n, nil
+	s.token.Renew()
+	s.Received += uint64(len(b))
+	return s.backend.Write(b)
 }
 
-func (s *Stream) Reader(token string) (io.ReadCloser, error) {
+func (s *Stream) AuthorizedRetrieve(token string) (io.ReadCloser, error) {
 	if !s.Authorize(token) {
 		return nil, fmt.Errorf("unauthorized to download")
 	}
-	return os.Open(s.Path)
+	s.token.Renew()
+	return s.backend.Retrieve()
 }
