@@ -50,13 +50,17 @@ func (a *API) Sweeper(every time.Duration) {
 
 func (a *API) Sweep() {
 	total := 0
+	logged := false
 	cancel := make([]*Stream, 0)
 
 	a.lock.Lock()
-	log.Debugf("sweeping to clean out expired upload / download streams...")
 	for id, s := range a.uploads {
 		total += 1
 		if s.Expired() {
+			if !logged {
+				log.Debugf("sweeping to clean out expired upload / download streams...")
+				logged = true
+			}
 			log.Debugf("clearing out upload stream [%s]... it expired on %s", id, s.Expires())
 			cancel = append(cancel, s)
 			delete(a.uploads, id)
@@ -65,18 +69,24 @@ func (a *API) Sweep() {
 	for id, s := range a.downloads {
 		total += 1
 		if s.Expired() {
+			if !logged {
+				log.Debugf("sweeping to clean out expired upload / download streams...")
+				logged = true
+			}
 			log.Debugf("clearing out download stream [%s]...", id)
 			delete(a.downloads, id)
 		}
 	}
 	a.lock.Unlock()
 
-	log.Debugf("swept up.  clearing out %d of %d streams", len(cancel), total)
-	for _, s := range cancel {
-		log.Debugf("canceling upload stream [%s]...", s.ID)
-		s.Cancel()
+	if len(cancel) > 0 {
+			log.Debugf("swept up: clearing out %d of %d streams", len(cancel), total)
+		for _, s := range cancel {
+			log.Debugf("canceling upload stream [%s]...", s.ID)
+			s.Cancel()
+		}
+		log.Debugf("canceled all expired upload streams.")
 	}
-	log.Debugf("done with cleanup.")
 }
 
 func (a *API) NewUploadStream(path string) (*Stream, error) {
