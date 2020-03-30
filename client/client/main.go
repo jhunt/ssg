@@ -23,11 +23,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = client.Upload(upload.ID, upload.Token, os.Stdin)
+	size, err := client.Upload(upload.ID, upload.Token, os.Stdin)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to upload to the storage gateway: %s\n", err)
 		os.Exit(1)
 	}
+
+	fmt.Println("Size: ", size)
 
 	fmt.Println("ID: ", upload.ID)
 	fmt.Println("Token: ", upload.Token)

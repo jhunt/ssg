@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -70,46 +69,37 @@ func (cc *ControlClient) StartUpload(path string) (*StreamInfo, error) {
 		return nil, err
 	}
 
-	c := &Client{
-		URL: cc.URL + "/upload/" + out.ID,
-	}
-	fmt.Println("URL: ", c.URL)
 	return &out, nil
 }
 
-func (c *Client) Upload(id, token string, in *os.File) error {
+func (c *Client) Upload(id, token string, in *os.File) (int64, error) {
 	client := &http.Client{}
 
 	scanner := bufio.NewScanner(in)
+	var size int
 	for scanner.Scan() {
 		var data UploadData
 		data.Data = base64.StdEncoding.EncodeToString([]byte(scanner.Text()))
 		requestBody, err := json.Marshal(data)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		reqURL := c.URL + "/upload/" + id
 		req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(requestBody))
 		if err != nil {
-			return err
+			return 0, err
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-SSG-Token", token)
 
-		resp, err := client.Do(req)
+		_, err = client.Do(req)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		var out Response
-		err = json.Unmarshal(b, &out)
-		fmt.Println("OK: ", out.OK)
+		size += len(data.Data)
 	}
-	return nil
+	return int64(size), nil
 }
 
 func (cc *ControlClient) StartDownload(path string) (*StreamInfo, error) {
