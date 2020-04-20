@@ -22,16 +22,16 @@ type Client struct {
 	URL string
 }
 
-func NewControlClient(url, username, password string) ControlClient {
-	return ControlClient{
+func NewControlClient(url, username, password string) *ControlClient {
+	return &ControlClient{
 		URL:      url,
 		Username: username,
 		Password: password,
 	}
 }
 
-func NewClient(url string) Client {
-	return Client{
+func NewClient(url string) *Client {
+	return &Client{
 		URL: url,
 	}
 }
@@ -155,4 +155,63 @@ func (c *Client) Download(id, token string) (io.ReadCloser, error) {
 	}
 
 	return resp.Body, err
+}
+
+func (cc *ControlClient) StartDelete(path string) (*StreamInfo, error) {
+	client := &http.Client{}
+	var out StreamInfo
+
+	requestBody, err := json.Marshal(map[string]string{
+		"path": path,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	reqURL := cc.URL + "/delete"
+	req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(cc.Username, cc.Password)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(b, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
+func (c *Client) Delete(id, path, token string) error {
+	client := &http.Client{}
+
+	requestBody, err := json.Marshal(map[string]string{
+		"path": path,
+	})
+	if err != nil {
+		return err
+	}
+
+	reqURL := c.URL + "/delete/" + id
+	req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-SSG-Token", token)
+
+	_, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
