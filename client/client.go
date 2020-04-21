@@ -205,6 +205,9 @@ func (c *Client) Delete(id, path, token string) error {
 
 	reqURL := c.URL + "/delete/" + id
 	req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-SSG-Token", token)
 
