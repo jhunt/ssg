@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	"github.com/shieldproject/shield-storage-gateway/backend"
@@ -89,12 +88,4 @@ func (s *Stream) AuthorizedRetrieve(token string) (io.ReadCloser, error) {
 	}
 	s.token.Renew()
 	return s.backend.Retrieve()
-}
-
-func (s *Stream) AuthorizeDelete(path, token string) error {
-	if !s.Authorize((token)) {
-		return fmt.Errorf("unauthorized to delete")
-	}
-	s.token.Renew()
-	return os.Remove(path)
 }

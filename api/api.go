@@ -24,14 +24,12 @@ type API struct {
 	lock      sync.Mutex
 	uploads   map[string]*Stream
 	downloads map[string]*Stream
-	deletes   map[string]*Stream
 }
 
 func New() API {
 	return API{
 		uploads:   make(map[string]*Stream),
 		downloads: make(map[string]*Stream),
-		deletes:   make(map[string]*Stream),
 	}
 }
 
@@ -79,17 +77,6 @@ func (a *API) Sweep() {
 			delete(a.downloads, id)
 		}
 	}
-	for id, s := range a.deletes {
-		total += 1
-		if s.Expired() {
-			if !logged {
-				log.Debugf("sweeping to clean out expired delete streams...")
-				logged = true
-			}
-			log.Debugf("clearing out delete stream [%s]...", id)
-			delete(a.downloads, id)
-		}
-	}
 	a.lock.Unlock()
 
 	if len(cancel) > 0 {
@@ -132,6 +119,7 @@ func (a *API) GetUploadStream(id string, token string) (*Stream, bool) {
 }
 
 func (a *API) ForgetUploadStream(s *Stream) {
+	log.Debugf("forgetting upload stream [%s]...", s.ID)
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	delete(a.uploads, s.ID)
@@ -167,46 +155,22 @@ func (a *API) GetDownloadStream(id string, token string) (*Stream, bool) {
 }
 
 func (a *API) ForgetDownloadStream(s *Stream) {
+	log.Debugf("forgetting download stream [%s]...", s.ID)
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	delete(a.downloads, s.ID)
 }
 
-func (a *API) NewDeleteStream(path string) (*Stream, error) {
-	log.Debugf("creating new delete stream for '%s'", path)
+func (a *API) AuthorizeDelete(path string) error {
+	log.Debugf("deleting file %s", path)
+	a.lock.Lock()
 	s, err := NewStream(path, a.builder)
 	if err != nil {
 		log.Debugf("failed to create new delete stream for '%s': %s", path, err)
-		return nil, err
+		return err
 	}
-
-	if err := s.Lease(a.Lease); err != nil {
-		log.Debugf("failed to lease delete stream [%s]: %s", s.ID, err)
-		return nil, err
-	}
-
-	log.Debugf("persisting new delete stream as [%s]", s.ID)
-	a.lock.Lock()
 	defer a.lock.Unlock()
-	a.deletes[s.ID] = &s
-	return &s, nil
-}
-
-func (a *API) GetDeleteStream(id string, token string) (*Stream, bool) {
-	log.Debugf("retrieving delete stream [%s]...", id)
-	a.lock.Lock()
-	defer a.lock.Unlock()
-
-	s, ok := a.deletes[id]
-	log.Debugf("stream: %s\n okay:   %s", s.ID, ok)
-	log.Debugf("Token:  %s", s.Authorize(token))
-	return s, ok && s.Authorize(token)
-}
-
-func (a *API) ForgetDeleteStream(s *Stream) {
-	a.lock.Lock()
-	defer a.lock.Unlock()
-	delete(a.deletes, s.ID)
+	return s.Cancel()
 }
 
 func (a *API) Router() *route.Router {
@@ -291,21 +255,13 @@ func (a *API) Router() *route.Router {
 			return
 		}
 
-		s, err := a.NewDeleteStream(in.Path)
+		err := a.AuthorizeDelete(in.Path)
 		if err != nil {
-			r.Fail(route.Oops(err, "Unable to create delete stream"))
+			r.Fail(route.Oops(err, "failed to read from delete stream"))
 			return
 		}
 
-		r.OK(struct {
-			ID      string    `json:"id"`
-			Token   string    `json:"token"`
-			Expires time.Time `json:"expires"`
-		}{
-			ID:      s.ID,
-			Token:   s.Token(),
-			Expires: s.Expires(),
-		})
+		r.Success("file successfully deleted %s", in.Path)
 	})
 
 	r.Dispatch("GET /download/:uuid", func(r *route.Request) {
@@ -324,6 +280,7 @@ func (a *API) Router() *route.Router {
 		r.Header().Set("Content-Type", "application/octet-stream")
 		r.Stream(out)
 		a.ForgetDownloadStream(s)
+		out.Close()
 	})
 
 	r.Dispatch("POST /upload/:uuid", func(r *route.Request) {
@@ -362,32 +319,6 @@ func (a *API) Router() *route.Router {
 			return
 		}
 		r.Success("uploaded %d bytes", n)
-	})
-
-	r.Dispatch("POST /delete/:uuid", func(r *route.Request) {
-		token := r.Req.Header.Get("X-SSG-Token")
-		s, ok := a.GetDeleteStream(r.Args[1], token)
-		if !ok {
-			r.Fail(route.NotFound(nil, "stream not found"))
-			return
-		}
-		var in struct {
-			Path string `json:"path"`
-		}
-		if !r.Payload(&in) {
-			return
-		}
-		if r.Missing("path", in.Path) {
-			return
-		}
-
-		err := s.AuthorizeDelete(in.Path, token)
-		if err != nil {
-			r.Fail(route.Oops(err, "failed to read from delete stream"))
-			return
-		}
-		r.Success("file successfullt deleted")
-		a.ForgetDeleteStream(s)
 	})
 
 	r.Dispatch("GET /admin/streams", func(r *route.Request) {
