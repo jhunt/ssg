@@ -95,12 +95,13 @@ func (c *Client) Upload(id, token string, in *os.File, eof bool) (int64, error) 
 		if err != nil {
 			return 0, err
 		}
-		defer resp.Body.Close()
+		resp.Body.Close()
+		return 0, nil
 	}
 
 	scanner := bufio.NewScanner(in)
 	n := 8192
-	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	split := func(data []byte, atEOF bool) (int, []byte, error) {
 
 		if atEOF && len(data) == 0 {
 			return 0, nil, nil
@@ -114,11 +115,11 @@ func (c *Client) Upload(id, token string, in *os.File, eof bool) (int64, error) 
 			return len(data), data, nil
 		}
 
-		return
+		return 0, nil, nil
 	}
 	scanner.Split(split)
 	for scanner.Scan() {
-		data.Data = base64.StdEncoding.EncodeToString([]byte(scanner.Text()))
+		data.Data = base64.StdEncoding.EncodeToString(scanner.Bytes())
 		requestBody, err := json.Marshal(data)
 		if err != nil {
 			return 0, err
@@ -135,9 +136,8 @@ func (c *Client) Upload(id, token string, in *os.File, eof bool) (int64, error) 
 		if err != nil {
 			return 0, err
 		}
-
 		size += len(data.Data)
-		defer resp.Body.Close()
+		resp.Body.Close()
 	}
 	return int64(size), nil
 }
@@ -194,7 +194,6 @@ func (c *Client) Download(id, token string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	return resp.Body, err
 }
 
@@ -219,6 +218,6 @@ func (cc *ControlClient) DeleteFile(path string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 	return nil
 }

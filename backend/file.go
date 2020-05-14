@@ -27,10 +27,10 @@ func (f *File) Write(b []byte) (int, error) {
 		return 0, err
 	}
 	size, err := out.Write(b)
+	defer out.Close()
 	if err != nil {
 		return 0, err
 	}
-	out.Close()
 	return size, nil
 }
 

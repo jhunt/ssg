@@ -164,12 +164,12 @@ func (a *API) ForgetDownloadStream(s *Stream) {
 func (a *API) AuthorizeDelete(path string) error {
 	log.Debugf("deleting file %s", path)
 	a.lock.Lock()
+	defer a.lock.Unlock()
 	s, err := NewStream(path, a.builder)
 	if err != nil {
 		log.Debugf("failed to create new delete stream for '%s': %s", path, err)
 		return err
 	}
-	defer a.lock.Unlock()
 	return s.Cancel()
 }
 
@@ -257,7 +257,7 @@ func (a *API) Router() *route.Router {
 
 		err := a.AuthorizeDelete(in.Path)
 		if err != nil {
-			r.Fail(route.Oops(err, "failed to read from delete stream"))
+			r.Fail(route.Oops(err, "failed to delete file"))
 			return
 		}
 
@@ -280,7 +280,6 @@ func (a *API) Router() *route.Router {
 		r.Header().Set("Content-Type", "application/octet-stream")
 		r.Stream(out)
 		a.ForgetDownloadStream(s)
-		out.Close()
 	})
 
 	r.Dispatch("POST /upload/:uuid", func(r *route.Request) {
