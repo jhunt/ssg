@@ -44,10 +44,6 @@ func (m *MemoryBackend) Retrieve() (io.ReadCloser, error) {
 	return m, nil
 }
 
-func (m *MemoryBackend) Close() error {
-	return nil
-}
-
 func (m *MemoryBackend) Cancel() error {
 	m.em.lock.Lock()
 	defer m.em.lock.Unlock()
