@@ -77,28 +77,6 @@ func (c *Client) Upload(id, token string, in *os.File, eof bool) (int64, error) 
 	var data UploadData
 	var size int
 
-	if eof {
-		data.EOF = eof
-		requestBody, err := json.Marshal(data)
-		if err != nil {
-			return 0, err
-		}
-		reqURL := c.URL + "/upload/" + id
-		req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(requestBody))
-		if err != nil {
-			return 0, err
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-SSG-Token", token)
-
-		resp, err := client.Do(req)
-		if err != nil {
-			return 0, err
-		}
-		resp.Body.Close()
-		return 0, nil
-	}
-
 	scanner := bufio.NewScanner(in)
 	n := 8192
 	split := func(data []byte, atEOF bool) (int, []byte, error) {
@@ -137,6 +115,27 @@ func (c *Client) Upload(id, token string, in *os.File, eof bool) (int64, error) 
 			return 0, err
 		}
 		size += len(data.Data)
+		resp.Body.Close()
+	}
+
+	if eof {
+		data.EOF = eof
+		requestBody, err := json.Marshal(data)
+		if err != nil {
+			return 0, err
+		}
+		reqURL := c.URL + "/upload/" + id
+		req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(requestBody))
+		if err != nil {
+			return 0, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-SSG-Token", token)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return 0, err
+		}
 		resp.Body.Close()
 	}
 	return int64(size), nil

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	ssg "github.com/shieldproject/shield-storage-gateway/client"
@@ -16,8 +15,6 @@ func genBackupPath() string {
 	hour, min, sec := t.Clock()
 	uuid := "238943-439834-34984-43934439"
 	path := fmt.Sprintf("%04d/%02d/%02d/%04d-%02d-%02d-%02d%02d%02d-%s", year, mon, day, year, mon, day, hour, min, sec, uuid)
-	// Remove double slashes
-	path = strings.Replace(path, "//", "/", -1)
 	return path
 }
 
@@ -25,7 +22,7 @@ func main() {
 	ssgURL := os.Args[1]
 	username := os.Args[2]
 	password := os.Args[3]
-	path := "/Users/srinikethvarma/tmp/" + genBackupPath()
+	path := genBackupPath()
 
 	fmt.Println(ssgURL, username, password, path)
 	control := ssg.NewControlClient(ssgURL, username, password)
@@ -38,7 +35,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	size, err := client.Upload(upload.ID, upload.Token, os.Stdin, false)
+	size, err := client.Upload(upload.ID, upload.Token, os.Stdin, true)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to upload to the storage gateway: %s\n", err)
 		os.Exit(1)
@@ -47,12 +44,6 @@ func main() {
 
 	fmt.Println("ID: ", upload.ID)
 	fmt.Println("Token: ", upload.Token)
-
-	_, err = client.Upload(upload.ID, upload.Token, nil, true)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to upload to the storage gateway: %s\n", err)
-		os.Exit(1)
-	}
 
 	download, err := control.StartDownload(path)
 	if err != nil {
