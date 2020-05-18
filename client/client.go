@@ -74,7 +74,6 @@ func (cc *ControlClient) StartUpload(path string) (*StreamInfo, error) {
 
 func (c *Client) Upload(id, token string, in *os.File, eof bool) (int64, error) {
 	client := &http.Client{}
-	var data UploadData
 	var size int
 
 	scanner := bufio.NewScanner(in)
@@ -97,6 +96,7 @@ func (c *Client) Upload(id, token string, in *os.File, eof bool) (int64, error) 
 	}
 	scanner.Split(split)
 	for scanner.Scan() {
+		var data UploadData
 		data.Data = base64.StdEncoding.EncodeToString(scanner.Bytes())
 		requestBody, err := json.Marshal(data)
 		if err != nil {
@@ -119,6 +119,7 @@ func (c *Client) Upload(id, token string, in *os.File, eof bool) (int64, error) 
 	}
 
 	if eof {
+		var data UploadData
 		data.EOF = eof
 		requestBody, err := json.Marshal(data)
 		if err != nil {
