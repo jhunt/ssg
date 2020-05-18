@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"time"
 
-	"github.com/shieldproject/shield-storage-gateway/api"
+	"github.com/jhunt/shield-storage-gateway/api"
 )
 
 var _ = Describe("API Tokens", func() {

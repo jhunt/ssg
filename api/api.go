@@ -9,7 +9,7 @@ import (
 	"github.com/jhunt/go-route"
 	"github.com/jhunt/go-s3"
 
-	"github.com/shieldproject/shield-storage-gateway/backend"
+	"github.com/jhunt/shield-storage-gateway/backend"
 )
 
 type API struct {

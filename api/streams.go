@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/shieldproject/shield-storage-gateway/backend"
+	"github.com/jhunt/shield-storage-gateway/backend"
 )
 
 const (

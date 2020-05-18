@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/shieldproject/shield-storage-gateway/api"
-	"github.com/shieldproject/shield-storage-gateway/backend"
+	"github.com/jhunt/shield-storage-gateway/api"
+	"github.com/jhunt/shield-storage-gateway/backend"
 )
 
 type SharedMemory struct {

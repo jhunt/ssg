@@ -12,7 +12,7 @@ import (
 	"github.com/jhunt/go-log"
 	"github.com/jhunt/go-s3"
 
-	"github.com/shieldproject/shield-storage-gateway/api"
+	"github.com/jhunt/shield-storage-gateway/api"
 )
 
 var Version = ""

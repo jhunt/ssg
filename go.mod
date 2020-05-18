@@ -1,4 +1,4 @@
-module github.com/shieldproject/shield-storage-gateway
+module github.com/jhunt/shield-storage-gateway
 
 go 1.13
 

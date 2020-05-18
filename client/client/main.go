@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	ssg "github.com/shieldproject/shield-storage-gateway/client"
+	ssg "github.com/jhunt/shield-storage-gateway/client"
 )
 
 func genBackupPath() string {
