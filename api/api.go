@@ -19,7 +19,7 @@ type API struct {
 	Control route.BasicAuth
 	Admin   route.BasicAuth
 
-	builder  backend.BackendBuilder
+	builder backend.BackendBuilder
 
 	lock      sync.Mutex
 	uploads   map[string]*Stream
@@ -80,7 +80,7 @@ func (a *API) Sweep() {
 	a.lock.Unlock()
 
 	if len(cancel) > 0 {
-			log.Debugf("swept up: clearing out %d of %d streams", len(cancel), total)
+		log.Debugf("swept up: clearing out %d of %d streams", len(cancel), total)
 		for _, s := range cancel {
 			log.Debugf("canceling upload stream [%s]...", s.ID)
 			s.Cancel()
@@ -119,6 +119,7 @@ func (a *API) GetUploadStream(id string, token string) (*Stream, bool) {
 }
 
 func (a *API) ForgetUploadStream(s *Stream) {
+	log.Debugf("forgetting upload stream [%s]...", s.ID)
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	delete(a.uploads, s.ID)
@@ -154,9 +155,22 @@ func (a *API) GetDownloadStream(id string, token string) (*Stream, bool) {
 }
 
 func (a *API) ForgetDownloadStream(s *Stream) {
+	log.Debugf("forgetting download stream [%s]...", s.ID)
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	delete(a.downloads, s.ID)
+}
+
+func (a *API) AuthorizeDelete(path string) error {
+	log.Debugf("deleting file %s", path)
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	s, err := NewStream(path, a.builder)
+	if err != nil {
+		log.Debugf("failed to create new delete stream for '%s': %s", path, err)
+		return err
+	}
+	return s.Cancel()
 }
 
 func (a *API) Router() *route.Router {
@@ -168,7 +182,7 @@ func (a *API) Router() *route.Router {
 		}
 
 		var in struct {
-			Path  string `json:"path"`
+			Path string `json:"path"`
 		}
 		if !r.Payload(&in) {
 			return
@@ -200,7 +214,7 @@ func (a *API) Router() *route.Router {
 		}
 
 		var in struct {
-			Path  string `json:"path"`
+			Path string `json:"path"`
 		}
 		if !r.Payload(&in) {
 			return
@@ -224,6 +238,30 @@ func (a *API) Router() *route.Router {
 			Token:   s.Token(),
 			Expires: s.Expires(),
 		})
+	})
+
+	r.Dispatch("POST /delete", func(r *route.Request) {
+		if !r.BasicAuth(a.Control) {
+			return
+		}
+
+		var in struct {
+			Path string `json:"path"`
+		}
+		if !r.Payload(&in) {
+			return
+		}
+		if r.Missing("path", in.Path) {
+			return
+		}
+
+		err := a.AuthorizeDelete(in.Path)
+		if err != nil {
+			r.Fail(route.Oops(err, "failed to delete file"))
+			return
+		}
+
+		r.Success("file successfully deleted %s", in.Path)
 	})
 
 	r.Dispatch("GET /download/:uuid", func(r *route.Request) {

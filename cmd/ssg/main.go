@@ -1,10 +1,11 @@
 package main
 
 import (
-	fmt "github.com/jhunt/go-ansi"
 	"net/http"
 	"os"
 	"time"
+
+	fmt "github.com/jhunt/go-ansi"
 
 	"github.com/jhunt/go-cli"
 	env "github.com/jhunt/go-envirotron"
@@ -30,7 +31,7 @@ func main() {
 		Version bool `cli:"-v, --version"`
 
 		Debug bool   `cli:"-D, --debug"`
-		Log   string `cli:"-l, --log-level", env:"SSG_LOG_LEVEL"`
+		Log   string `cli:"-l, --log-level" env:"SSG_LOG_LEVEL"`
 
 		Listen string `cli:"--listen" env:"SSG_LISTEN"`
 

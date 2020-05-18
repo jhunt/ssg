@@ -20,7 +20,7 @@ type Stream struct {
 	Path     string
 	Received uint64
 
-	token Token
+	token   Token
 	backend backend.Backend
 }
 
@@ -39,8 +39,8 @@ func NewStream(path string, builder backend.BackendBuilder) (Stream, error) {
 	}
 
 	return Stream{
-		ID:    id,
-		Path:  path,
+		ID:   id,
+		Path: path,
 
 		token:   ExpiredToken,
 		backend: builder(path),

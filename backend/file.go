@@ -2,8 +2,8 @@ package backend
 
 import (
 	"io"
-	"path"
 	"os"
+	"path"
 )
 
 type File struct {
@@ -11,7 +11,7 @@ type File struct {
 }
 
 func FileBuilder(root string) BackendBuilder {
-	return func (path string) Backend {
+	return func(path string) Backend {
 		return &File{path}
 	}
 }
@@ -26,8 +26,12 @@ func (f *File) Write(b []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	size, err := out.Write(b)
 	defer out.Close()
-	return out.Write(b)
+	if err != nil {
+		return 0, err
+	}
+	return size, nil
 }
 
 func (f *File) Retrieve() (io.ReadCloser, error) {
