@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 )
 
 type ControlClient struct {
@@ -72,7 +71,7 @@ func (cc *ControlClient) StartUpload(path string) (*StreamInfo, error) {
 	return &out, nil
 }
 
-func (c *Client) Upload(id, token string, in *os.File, eof bool) (int64, error) {
+func (c *Client) Upload(id, token string, in io.Reader, eof bool) (int64, error) {
 	client := &http.Client{}
 	var size int
 
