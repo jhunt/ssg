@@ -11,7 +11,7 @@ type S3 struct {
 	key    string
 	client *s3.Client
 	upload io.WriteCloser
-	final chan error
+	final  chan error
 }
 
 func S3Builder(config s3.Client) BackendBuilder {
@@ -36,7 +36,7 @@ func (s *S3) Write(b []byte) (int, error) {
 
 		s.final = make(chan error)
 		rd, wr := io.Pipe()
-		go func () {
+		go func() {
 			_, err := u.Stream(rd, 5*1024*1024*1024)
 			if err == nil {
 				err = u.Done()
@@ -45,7 +45,6 @@ func (s *S3) Write(b []byte) (int, error) {
 		}()
 		s.upload = wr
 	}
-
 	return s.upload.Write(b)
 }
 
@@ -66,7 +65,7 @@ func (s *S3) Retrieve() (io.ReadCloser, error) {
 func (s *S3) Close() error {
 	if s.upload != nil {
 		s.upload.Close()
-		return <- s.final
+		return <-s.final
 	}
 	return nil
 }
