@@ -2,13 +2,14 @@ package api_test
 
 import (
 	"bytes"
-	"sync"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"io"
 	"io/ioutil"
 	"os"
+	"sync"
 	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/jhunt/shield-storage-gateway/api"
 	"github.com/jhunt/shield-storage-gateway/backend"
@@ -16,7 +17,7 @@ import (
 
 type SharedMemory struct {
 	lock sync.Mutex
-	data map[string] []byte
+	data map[string][]byte
 }
 
 func (sm *SharedMemory) Get(key string) []byte {
@@ -29,7 +30,7 @@ func (sm *SharedMemory) Get(key string) []byte {
 type MemoryBackend struct {
 	key string
 	off int
-	em *SharedMemory
+	em  *SharedMemory
 }
 
 func (m *MemoryBackend) Write(b []byte) (int, error) {
@@ -63,7 +64,7 @@ func (m *MemoryBackend) Read(b []byte) (int, error) {
 	m.em.lock.Lock()
 	defer m.em.lock.Unlock()
 
-	if n := min(len(m.em.data[m.key]) - m.off, len(b)); n > 0 {
+	if n := min(len(m.em.data[m.key])-m.off, len(b)); n > 0 {
 		copy(b, m.em.data[m.key][m.off:m.off+n])
 		m.off += n
 		return n, nil
@@ -78,11 +79,11 @@ func (m *MemoryBackend) Close() error {
 
 var _ = Describe("API Streams", func() {
 	mem := SharedMemory{
-		data: make(map[string] []byte),
+		data: make(map[string][]byte),
 	}
-	builder := func (k string) backend.Backend {
+	builder := func(k string) backend.Backend {
 		return &MemoryBackend{
-			em: &mem,
+			em:  &mem,
 			key: k,
 		}
 	}
@@ -91,7 +92,7 @@ var _ = Describe("API Streams", func() {
 		It("should authorize a matched token", func() {
 			s, err := api.NewStream("path/to/file", builder)
 			Ω(err).ShouldNot(HaveOccurred())
-			err = s.Lease(10*time.Minute)
+			err = s.Lease(10 * time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(s.Authorize(s.Token())).Should(BeTrue())
@@ -100,7 +101,7 @@ var _ = Describe("API Streams", func() {
 		It("should not authorize a mismatched token", func() {
 			s, err := api.NewStream("path/to/file", builder)
 			Ω(err).ShouldNot(HaveOccurred())
-			err = s.Lease(10*time.Minute)
+			err = s.Lease(10 * time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(s.Authorize("bad:" + s.Token())).Should(BeFalse())
@@ -109,7 +110,7 @@ var _ = Describe("API Streams", func() {
 		It("should not authorize an expired token", func() {
 			s, err := api.NewStream("path/to/file", builder)
 			Ω(err).ShouldNot(HaveOccurred())
-			err = s.Lease(-8*time.Minute)
+			err = s.Lease(-8 * time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(s.Authorize(s.Token())).Should(BeFalse())
 		})
@@ -122,7 +123,7 @@ var _ = Describe("API Streams", func() {
 			var err error
 			s, err = api.NewStream("test/path/to/file", builder)
 			Ω(err).ShouldNot(HaveOccurred())
-			err = s.Lease(10*time.Minute)
+			err = s.Lease(10 * time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 		})
 
@@ -164,7 +165,7 @@ var _ = Describe("API Streams", func() {
 			var err error
 			uploader, err = api.NewStream("download/file", builder)
 			Ω(err).ShouldNot(HaveOccurred())
-			err = uploader.Lease(10*time.Minute)
+			err = uploader.Lease(10 * time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 			_, err = uploader.AuthorizedWrite(uploader.Token(), []byte("this is the first line\n"))
 			Ω(err).ShouldNot(HaveOccurred())
@@ -190,7 +191,7 @@ var _ = Describe("API Streams", func() {
 		It("should not download file chunks with a bad token", func() {
 			s, err := api.NewStream(uploader.Path, builder)
 			Ω(err).ShouldNot(HaveOccurred())
-			err = s.Lease(10*time.Minute)
+			err = s.Lease(10 * time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			out, err := s.AuthorizedRetrieve("INVALID TOKEN")
@@ -201,7 +202,7 @@ var _ = Describe("API Streams", func() {
 		It("should not download file chunks for an expired token", func() {
 			s, err := api.NewStream(uploader.Path, builder)
 			Ω(err).ShouldNot(HaveOccurred())
-			err = s.Lease(10*time.Minute)
+			err = s.Lease(10 * time.Minute)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			s.Lease(-1 * time.Second)
