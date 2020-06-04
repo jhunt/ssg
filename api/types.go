@@ -22,3 +22,7 @@ type StreamKey struct {
 	Token    string `json:"token"`
 	Lifetime uint   `json:"lifetime"`
 }
+
+type StreamConfig struct {
+	Compression string `json:"compression"`
+}

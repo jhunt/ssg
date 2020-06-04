@@ -35,6 +35,8 @@ func main() {
 
 		Listen string `cli:"--listen" env:"SSG_LISTEN"`
 
+		Compression string
+
 		Mode     string `cli:"-m, --mode" env:"SSG_MODE"`
 		FileRoot string `cli:"--file-root" env:"SSG_FILE_ROOT"`
 		S3Bucket string `cli:"--s3-bucket" env:"SSG_S3_BUCKET"`
@@ -64,6 +66,7 @@ func main() {
 	opts.AdminPassword = "password"
 	opts.ControlUsername = "control"
 	opts.ControlPassword = "shield"
+	opts.Compression = "zlib"
 
 	env.Override(&opts)
 
@@ -179,6 +182,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	ssg.SetStreamConfig(api.StreamConfig{
+		Compression: opts.Compression,
+	})
+
 	ssg.Lease = time.Duration(opts.Lease) * time.Second
 	ssg.Admin.Username = opts.AdminUsername
 	ssg.Admin.Password = opts.AdminPassword
@@ -187,6 +194,7 @@ func main() {
 	http.Handle("/", ssg.Router())
 
 	fmt.Fprintf(os.Stderr, "ssg starting up...\n")
+	fmt.Fprintf(os.Stderr, "ssg using [%s] compression\n", opts.Compression)
 	fmt.Fprintf(os.Stderr, " - running cleanup routine @C{every %d seconds}\n", opts.Cleanup)
 	go ssg.Sweeper(time.Duration(opts.Cleanup) * time.Second)
 

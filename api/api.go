@@ -21,6 +21,8 @@ type API struct {
 
 	builder backend.BackendBuilder
 
+	config StreamConfig
+
 	lock      sync.Mutex
 	uploads   map[string]*Stream
 	downloads map[string]*Stream
@@ -39,6 +41,10 @@ func (a *API) UseFiles(root string) {
 
 func (a *API) UseS3(config s3.Client) {
 	a.builder = backend.S3Builder(config)
+}
+
+func (a *API) SetStreamConfig(c StreamConfig) {
+	a.config = c
 }
 
 func (a *API) Sweeper(every time.Duration) {
@@ -91,7 +97,7 @@ func (a *API) Sweep() {
 
 func (a *API) NewUploadStream(path string) (*Stream, error) {
 	log.Debugf("creating new upload stream for '%s'", path)
-	s, err := NewStream(path, a.builder)
+	s, err := NewStream(path, a.builder, a.config)
 	if err != nil {
 		log.Debugf("failed to create new upload stream for '%s': %s", path, err)
 		return nil, err
@@ -127,7 +133,7 @@ func (a *API) ForgetUploadStream(s *Stream) {
 
 func (a *API) NewDownloadStream(path string) (*Stream, error) {
 	log.Debugf("creating new download stream for '%s'", path)
-	s, err := NewStream(path, a.builder)
+	s, err := NewStream(path, a.builder, a.config)
 	if err != nil {
 		log.Debugf("failed to create new download stream for '%s': %s", path, err)
 		return nil, err
@@ -165,7 +171,7 @@ func (a *API) AuthorizeDelete(path string) error {
 	log.Debugf("deleting file %s", path)
 	a.lock.Lock()
 	defer a.lock.Unlock()
-	s, err := NewStream(path, a.builder)
+	s, err := NewStream(path, a.builder, a.config)
 	if err != nil {
 		log.Debugf("failed to create new delete stream for '%s': %s", path, err)
 		return err
