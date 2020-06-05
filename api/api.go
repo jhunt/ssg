@@ -97,7 +97,7 @@ func (a *API) Sweep() {
 
 func (a *API) NewUploadStream(path string) (*Stream, error) {
 	log.Debugf("creating new upload stream for '%s'", path)
-	s, err := NewStream(path, a.builder)
+	s, err := NewUploadStream(path, a.builder)
 	if err != nil {
 		log.Debugf("failed to create new upload stream for '%s': %s", path, err)
 		return nil, err
@@ -141,7 +141,7 @@ func (a *API) ForgetUploadStream(s *Stream) {
 
 func (a *API) NewDownloadStream(path string) (*Stream, error) {
 	log.Debugf("creating new download stream for '%s'", path)
-	s, err := NewStream(path, a.builder)
+	s, err := NewDownloadStream(path, a.builder)
 	if err != nil {
 		log.Debugf("failed to create new download stream for '%s': %s", path, err)
 		return nil, err
@@ -187,7 +187,7 @@ func (a *API) AuthorizeDelete(path string) error {
 	log.Debugf("deleting file %s", path)
 	a.lock.Lock()
 	defer a.lock.Unlock()
-	s, err := NewStream(path, a.builder)
+	s, err := AuthorizeDelete(path, a.builder)
 	if err != nil {
 		log.Debugf("failed to create new delete stream for '%s': %s", path, err)
 		return err

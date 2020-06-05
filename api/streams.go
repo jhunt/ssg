@@ -36,14 +36,34 @@ func (s Stream) Expires() time.Time {
 	return s.token.Expires
 }
 
-func NewStream(path string, builder backend.BackendBuilder) (Stream, error) {
+func NewUploadStream(path string, builder backend.BackendBuilder) (Stream, error) {
 	id, err := NewRandomString(StreamIDLength)
 	if err != nil {
 		return Stream{}, err
 	}
 
 	be := builder(path)
-	r, _ := be.Retrieve()
+	return Stream{
+		ID:   id,
+		Path: path,
+
+		token:   ExpiredToken,
+		backend: be,
+		writer:  be,
+	}, nil
+}
+
+func NewDownloadStream(path string, builder backend.BackendBuilder) (Stream, error) {
+	id, err := NewRandomString(StreamIDLength)
+	if err != nil {
+		return Stream{}, err
+	}
+
+	be := builder(path)
+	r, err := be.Retrieve()
+	if err != nil {
+		return Stream{}, err
+	}
 	return Stream{
 		ID:   id,
 		Path: path,
@@ -51,7 +71,22 @@ func NewStream(path string, builder backend.BackendBuilder) (Stream, error) {
 		token:   ExpiredToken,
 		backend: be,
 		reader:  r,
-		writer:  be,
+	}, nil
+}
+
+func AuthorizeDelete(path string, builder backend.BackendBuilder) (Stream, error) {
+	id, err := NewRandomString(StreamIDLength)
+	if err != nil {
+		return Stream{}, err
+	}
+
+	be := builder(path)
+	return Stream{
+		ID:   id,
+		Path: path,
+
+		token:   ExpiredToken,
+		backend: be,
 	}, nil
 }
 
