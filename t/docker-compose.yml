@@ -1,0 +1,39 @@
+#
+# This Docker Compose recipe is meant for spinning up the
+# accompanying data services required to perform development
+# and engineering work against SHIELD Storage Gateway software.
+#
+# It is not meant to be used directly in production, although
+# it does act as a decent template for what we will need
+# when we do finally launch.
+#
+# Note that there are no volumes in this recipe.
+# Data will not persist across container restarts.
+# This is a feature of the test environment, not a bug.
+#
+# You should never have to run this recipe by hand -- the
+# integration test suite handles it for you. However, if you
+# need (or want) to:
+#
+#     PUBLIC_PORT=9077 \
+#       docker-compose -p ssg-it -f t/docker-compose.yml up
+#
+
+version: '2'
+services:
+  gateway:
+    build: &build
+      context: ..
+      #args:
+      #  VERSION: 0.0.0
+    ports: ["$PUBLIC_PORT:3100"]
+    environment:
+      - SSG_LISTEN=:3100
+      - SSG_MODE=fs
+      - SSG_FILE_ROOT=/srv/files
+      - SSG_ADMIN_USERNAME=test-admin
+      - SSG_ADMIN_PASSWORD=t-a-sekrit
+      - SSG_CONTROL_USERNAME=test-control
+      - SSG_CONTROL_PASSWORD=t-c-sekrit
+    volumes:
+      - $PWD/t/tmp:/srv/files
