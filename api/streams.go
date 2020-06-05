@@ -113,7 +113,9 @@ func (s Stream) Close() error {
 }
 
 func (s Stream) Cancel() error {
-	s.writer.Close()
+	if s.writer != nil {
+		s.writer.Close()
+	}
 	return s.backend.Cancel()
 }
 
