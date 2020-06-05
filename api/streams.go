@@ -1,13 +1,12 @@
 package api
 
 import (
-	"bufio"
 	"fmt"
 	"io"
-	"sync"
 	"time"
 
 	"github.com/jhunt/shield-storage-gateway/backend"
+	"github.com/jhunt/shield-storage-gateway/compress"
 )
 
 const (
@@ -18,13 +17,15 @@ const (
 type Disposition int
 
 type Stream struct {
-	ID          string
-	Path        string
-	Received    uint64
-	Compression string
+	ID       string
+	Path     string
+	Received uint64
 
 	token   Token
 	backend backend.Backend
+
+	reader io.ReadCloser
+	writer io.WriteCloser
 }
 
 func (s Stream) Token() string {
@@ -35,19 +36,57 @@ func (s Stream) Expires() time.Time {
 	return s.token.Expires
 }
 
-func NewStream(path string, builder backend.BackendBuilder, config StreamConfig) (Stream, error) {
+func NewUploadStream(path string, builder backend.BackendBuilder) (Stream, error) {
 	id, err := NewRandomString(StreamIDLength)
 	if err != nil {
 		return Stream{}, err
 	}
 
+	be := builder(path)
 	return Stream{
-		ID:          id,
-		Path:        path,
-		Compression: config.Compression,
+		ID:   id,
+		Path: path,
 
 		token:   ExpiredToken,
-		backend: builder(path),
+		backend: be,
+		writer:  be,
+	}, nil
+}
+
+func NewDownloadStream(path string, builder backend.BackendBuilder) (Stream, error) {
+	id, err := NewRandomString(StreamIDLength)
+	if err != nil {
+		return Stream{}, err
+	}
+
+	be := builder(path)
+	r, err := be.Retrieve()
+	if err != nil {
+		return Stream{}, err
+	}
+	return Stream{
+		ID:   id,
+		Path: path,
+
+		token:   ExpiredToken,
+		backend: be,
+		reader:  r,
+	}, nil
+}
+
+func AuthorizeDelete(path string, builder backend.BackendBuilder) (Stream, error) {
+	id, err := NewRandomString(StreamIDLength)
+	if err != nil {
+		return Stream{}, err
+	}
+
+	be := builder(path)
+	return Stream{
+		ID:   id,
+		Path: path,
+
+		token:   ExpiredToken,
+		backend: be,
 	}, nil
 }
 
@@ -70,11 +109,33 @@ func (s Stream) Expired() bool {
 }
 
 func (s Stream) Close() error {
-	return s.backend.Close()
+	return s.writer.Close()
 }
 
 func (s Stream) Cancel() error {
+	if s.writer != nil {
+		s.writer.Close()
+	}
 	return s.backend.Cancel()
+}
+
+func (s *Stream) Compress(typ string) error {
+	w, err := compress.Compress(s.writer, typ)
+	if err != nil {
+		return err
+	}
+
+	s.writer = w
+	return nil
+}
+
+func (s *Stream) Decompress(typ string) error {
+	r, err := compress.Decompress(s.reader, typ)
+	if err != nil {
+		return err
+	}
+	s.reader = r
+	return nil
 }
 
 func (s *Stream) AuthorizedWrite(token string, b []byte) (int, error) {
@@ -84,71 +145,7 @@ func (s *Stream) AuthorizedWrite(token string, b []byte) (int, error) {
 	s.token.Renew()
 	s.Received += uint64(len(b))
 
-	if s.Compression != "" {
-		r, w := io.Pipe()
-		errors := make(chan error, 2)
-		size := make(chan int, 1)
-		var wg sync.WaitGroup
-
-		wg.Add(1)
-		go func() {
-			defer func() {
-				w.Close()
-				wg.Done()
-			}()
-			_, err := backend.Compress(w, b, s.Compression)
-			if err != nil {
-				errors <- fmt.Errorf("failed to compress data: %s", err)
-			}
-		}()
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			scanner := bufio.NewScanner(r)
-			n := 8192
-			split := func(data []byte, atEOF bool) (int, []byte, error) {
-
-				if atEOF && len(data) == 0 {
-					return 0, nil, nil
-				}
-
-				if len(data) >= n {
-					return n, data[0:n], nil
-				}
-
-				if atEOF {
-					return len(data), data, nil
-				}
-
-				return 0, nil, nil
-			}
-			scanner.Split(split)
-			t := 0
-			for scanner.Scan() {
-				n, err := s.backend.Write(scanner.Bytes())
-				if err != nil {
-					errors <- err
-					return
-				}
-				t += n
-			}
-			size <- t
-		}()
-
-		wg.Wait()
-		close(size)
-		close(errors)
-
-		select {
-		case err := <-errors:
-			return 0, err
-		default:
-			return <-size, nil
-		}
-	}
-
-	return s.backend.Write(b)
+	return s.writer.Write(b)
 }
 
 func (s *Stream) AuthorizedRetrieve(token string) (io.ReadCloser, error) {
@@ -157,13 +154,5 @@ func (s *Stream) AuthorizedRetrieve(token string) (io.ReadCloser, error) {
 	}
 	s.token.Renew()
 
-	reader, err := s.backend.Retrieve()
-	if err != nil {
-		return nil, err
-	}
-	if s.Compression != "" {
-		return backend.Decompress(reader, s.Compression)
-	}
-
-	return reader, nil
+	return s.reader, nil
 }
