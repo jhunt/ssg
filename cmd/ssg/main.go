@@ -52,8 +52,6 @@ func main() {
 
 		ControlUsername string `cli:"--control-username" env:"SSG_CONTROL_USERNAME"`
 		ControlPassword string `cli:"--control-password" env:"SSG_CONTROL_PASSWORD"`
-
-		// eventually: S3 creds
 	}
 
 	opts.Log = "info"
