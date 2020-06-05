@@ -198,6 +198,10 @@ func (a *API) AuthorizeDelete(path string) error {
 func (a *API) Router() *route.Router {
 	r := &route.Router{}
 
+	r.Dispatch("GET /", func(r *route.Request) {
+		r.Success("ping")
+	})
+
 	r.Dispatch("POST /download", func(r *route.Request) {
 		if !r.BasicAuth(a.Control) {
 			return
