@@ -325,13 +325,6 @@ func (a *API) Router() *route.Router {
 			return
 		}
 
-		if in.EOF {
-			s.Close()
-			a.ForgetUploadStream(s)
-			r.Success("upload finished")
-			return
-		}
-
 		b, err := base64.StdEncoding.DecodeString(in.Data)
 		if err != nil {
 			r.Fail(route.Bad(err, "unable to decode base64 payload"))
@@ -343,7 +336,15 @@ func (a *API) Router() *route.Router {
 			r.Fail(route.Oops(err, "unable to upload data to stream"))
 			return
 		}
-		r.Success("uploaded %d bytes", n)
+
+		if in.EOF {
+			s.Close()
+			a.ForgetUploadStream(s)
+			r.Success("uploaded %d bytes (and finished)", n)
+
+		} else {
+			r.Success("uploaded %d bytes", n)
+		}
 	})
 
 	r.Dispatch("GET /admin/streams", func(r *route.Request) {
