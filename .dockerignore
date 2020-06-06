@@ -1,5 +1,7 @@
-Dockerfile
-Makefile
-.gitignore
-/.git
-/tmp
+**
+!/api
+!/backend
+!/cmd
+!/compress
+!/go.mod
+!/go.sum

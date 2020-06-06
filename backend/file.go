@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 type File struct {
@@ -13,7 +14,7 @@ type File struct {
 func FileBuilder(root string) BackendBuilder {
 	return func(path string) Backend {
 		return &File{
-			path: path,
+			path: filepath.Join(root, path),
 		}
 	}
 }
