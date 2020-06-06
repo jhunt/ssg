@@ -112,7 +112,7 @@ func (a *API) NewUploadStream(path string) (*Stream, error) {
 	}
 
 	if a.config.Encryption != "" {
-		params, err := a.config.VaultClient.NewParameters(path, a.config.Encryption, false)
+		params, err := a.config.VaultClient.NewParameters(path, a.config.Encryption)
 		if err != nil {
 			return nil, err
 		}
