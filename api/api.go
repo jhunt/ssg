@@ -103,14 +103,6 @@ func (a *API) NewUploadStream(path string) (*Stream, error) {
 		return nil, err
 	}
 
-	if a.config.Compression != "" {
-		err = s.Compress(a.config.Compression)
-		if err != nil {
-			log.Debugf("failed to create a new compression stream for '%s': %s", path, err)
-			return nil, err
-		}
-	}
-
 	if a.config.Encryption != "" {
 		params, err := a.config.VaultClient.NewParameters(path, a.config.Encryption)
 		if err != nil {
@@ -118,6 +110,14 @@ func (a *API) NewUploadStream(path string) (*Stream, error) {
 		}
 		err = s.Encrypt(params.Key, params.IV, a.config.Encryption)
 		if err != nil {
+			return nil, err
+		}
+	}
+
+	if a.config.Compression != "" {
+		err = s.Compress(a.config.Compression)
+		if err != nil {
+			log.Debugf("failed to create a new compression stream for '%s': %s", path, err)
 			return nil, err
 		}
 	}
@@ -158,14 +158,6 @@ func (a *API) NewDownloadStream(path string) (*Stream, error) {
 		return nil, err
 	}
 
-	if a.config.Compression != "" {
-		err = s.Decompress(a.config.Compression)
-		if err != nil {
-			log.Debugf("failed to create a new decompression stream for '%s': %s", path, err)
-			return nil, err
-		}
-	}
-
 	if a.config.Encryption != "" {
 		params, err := a.config.VaultClient.Retrieve(path)
 		if err != nil {
@@ -173,6 +165,14 @@ func (a *API) NewDownloadStream(path string) (*Stream, error) {
 		}
 		err = s.Decrypt(params.Key, params.IV, a.config.Encryption)
 		if err != nil {
+			return nil, err
+		}
+	}
+
+	if a.config.Compression != "" {
+		err = s.Decompress(a.config.Compression)
+		if err != nil {
+			log.Debugf("failed to create a new decompression stream for '%s': %s", path, err)
 			return nil, err
 		}
 	}
