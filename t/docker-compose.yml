@@ -21,7 +21,22 @@
 
 version: '2'
 services:
+  vault:
+    image: vault
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=ichaeZeeth5ichi1OhxooSahpoo8wa
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+      - VAULT_API_ADDR=http://vault:8200
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=ichaeZeeth5ichi1OhxooSahpoo8wa
+    command:
+      - vault
+      - server
+      - -dev
+
   gateway:
+    depends_on:
+      - vault
     build: &build
       context: ..
       #args:
@@ -29,11 +44,15 @@ services:
     ports: ["$PUBLIC_PORT:3100"]
     environment:
       - SSG_LISTEN=:3100
+      - SSG_LOG_LEVEL=debug
       - SSG_MODE=fs
       - SSG_FILE_ROOT=/srv/files
       - SSG_ADMIN_USERNAME=test-admin
       - SSG_ADMIN_PASSWORD=t-a-sekrit
       - SSG_CONTROL_USERNAME=test-control
       - SSG_CONTROL_PASSWORD=t-c-sekrit
+      - SSG_ENCRYPTION=aes256-ctr
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_ROOT_TOKEN=ichaeZeeth5ichi1OhxooSahpoo8wa
     volumes:
       - $PWD/t/tmp:/srv/files

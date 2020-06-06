@@ -3,5 +3,7 @@
 !/backend
 !/cmd
 !/compress
+!/crypt
+!/vault
 !/go.mod
 !/go.sum

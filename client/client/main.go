@@ -14,7 +14,7 @@ func genBackupPath() string {
 	year, mon, day := t.Date()
 	hour, min, sec := t.Clock()
 	uuid := "238943-439834-34984-43934439"
-	path := fmt.Sprintf("%04d/%02d/%02d/%04d-%02d-%02d-%02d%02d%02d-%s", year, mon, day, year, mon, day, hour, min, sec, uuid)
+	path := fmt.Sprintf("%04d-%02d-%02d-%02d%02d%02d-%s", year, mon, day, hour, min, sec, uuid)
 	return path
 }
 
