@@ -3,10 +3,12 @@ package api
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"time"
 
 	"github.com/jhunt/shield-storage-gateway/backend"
 	"github.com/jhunt/shield-storage-gateway/compress"
+	"github.com/jhunt/shield-storage-gateway/crypt"
 )
 
 const (
@@ -135,6 +137,25 @@ func (s *Stream) Decompress(typ string) error {
 		return err
 	}
 	s.reader = r
+	return nil
+}
+
+func (s *Stream) Encrypt(key, IV, typ string) error {
+	w, err := crypt.Encrypt(s.writer, key, IV, typ)
+	if err != nil {
+		return err
+	}
+	s.writer = w
+	return nil
+}
+
+func (s *Stream) Decrypt(key, IV, typ string) error {
+	r, err := crypt.Decrypt(s.reader, key, IV, typ)
+	if err != nil {
+		return err
+	}
+
+	s.reader = ioutil.NopCloser(r)
 	return nil
 }
 

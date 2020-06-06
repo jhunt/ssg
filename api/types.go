@@ -1,5 +1,7 @@
 package api
 
+import "github.com/jhunt/shield-storage-gateway/vault"
+
 type UploadRequest struct {
 	Prefix string `json:"prefix"`
 	Agent  string `json:"agent"`
@@ -25,4 +27,6 @@ type StreamKey struct {
 
 type StreamConfig struct {
 	Compression string `json:"compression"`
+	Encryption  string `json:"encryption"`
+	VaultClient *vault.Client
 }

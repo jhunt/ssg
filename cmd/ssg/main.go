@@ -13,6 +13,7 @@ import (
 	"github.com/jhunt/go-s3"
 
 	"github.com/jhunt/shield-storage-gateway/api"
+	"github.com/jhunt/shield-storage-gateway/vault"
 )
 
 var Version = ""
@@ -36,6 +37,10 @@ func main() {
 		Listen string `cli:"--listen" env:"SSG_LISTEN"`
 
 		Compression string
+
+		Encryption     string
+		VaultURL       string `cli:"--vault-url" env:"VAULT_ADDR"`
+		VaultRootToken string `cli:"--token" env:"VAULT_ROOT_TOKEN"`
 
 		Mode     string `cli:"-m, --mode" env:"SSG_MODE"`
 		FileRoot string `cli:"--file-root" env:"SSG_FILE_ROOT"`
@@ -67,6 +72,8 @@ func main() {
 	opts.ControlUsername = "control"
 	opts.ControlPassword = "shield"
 	opts.Compression = "zlib"
+	opts.Encryption = "aes256-ctr"
+	opts.VaultURL = "http://127.0.0.1:8200"
 
 	env.Override(&opts)
 
@@ -182,8 +189,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	c, err := vault.Connect(opts.VaultURL, opts.VaultRootToken)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to connect to vault at %s\n", opts.VaultURL)
+		os.Exit(1)
+	}
+
 	ssg.SetStreamConfig(api.StreamConfig{
 		Compression: opts.Compression,
+		Encryption:  opts.Encryption,
+		VaultClient: c,
 	})
 
 	ssg.Lease = time.Duration(opts.Lease) * time.Second
@@ -195,6 +210,8 @@ func main() {
 
 	fmt.Fprintf(os.Stderr, "ssg starting up...\n")
 	fmt.Fprintf(os.Stderr, "ssg using [%s] compression\n", opts.Compression)
+	fmt.Fprintf(os.Stderr, "ssg using [%s] encryption\n", opts.Encryption)
+	fmt.Fprintf(os.Stderr, "connected to vault at %s\n", opts.VaultURL)
 	fmt.Fprintf(os.Stderr, " - running cleanup routine @C{every %d seconds}\n", opts.Cleanup)
 	go ssg.Sweeper(time.Duration(opts.Cleanup) * time.Second)
 

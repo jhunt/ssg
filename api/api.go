@@ -111,6 +111,17 @@ func (a *API) NewUploadStream(path string) (*Stream, error) {
 		}
 	}
 
+	if a.config.Encryption != "" {
+		params, err := a.config.VaultClient.NewParameters(path, a.config.Encryption, false)
+		if err != nil {
+			return nil, err
+		}
+		err = s.Encrypt(params.Key, params.IV, a.config.Encryption)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if err := s.Lease(a.Lease); err != nil {
 		log.Debugf("failed to lease upload stream [%s]: %s", s.ID, err)
 		return nil, err
@@ -151,6 +162,17 @@ func (a *API) NewDownloadStream(path string) (*Stream, error) {
 		err = s.Decompress(a.config.Compression)
 		if err != nil {
 			log.Debugf("failed to create a new decompression stream for '%s': %s", path, err)
+			return nil, err
+		}
+	}
+
+	if a.config.Encryption != "" {
+		params, err := a.config.VaultClient.Retrieve(path)
+		if err != nil {
+			return nil, err
+		}
+		err = s.Decrypt(params.Key, params.IV, a.config.Encryption)
+		if err != nil {
 			return nil, err
 		}
 	}

@@ -3,6 +3,7 @@ module github.com/jhunt/shield-storage-gateway
 go 1.13
 
 require (
+	github.com/cloudfoundry-community/vaultkv v0.0.0-20200311151509-343c0e6fc506
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jhunt/go-ansi v0.0.0-20181127194324-5fd839f108b6
 	github.com/jhunt/go-cli v0.0.0-20180120230054-44398e595118
@@ -14,4 +15,5 @@ require (
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
+	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 )
