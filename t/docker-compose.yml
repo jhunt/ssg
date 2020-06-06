@@ -51,8 +51,9 @@ services:
       - SSG_ADMIN_PASSWORD=t-a-sekrit
       - SSG_CONTROL_USERNAME=test-control
       - SSG_CONTROL_PASSWORD=t-c-sekrit
+      - SSG_COMPRESSION=zlib
       - SSG_ENCRYPTION=aes256-ctr
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_ROOT_TOKEN=ichaeZeeth5ichi1OhxooSahpoo8wa
+      - SSG_VAULT_URL=http://vault:8200
+      - SSG_VAULT_TOKEN=ichaeZeeth5ichi1OhxooSahpoo8wa
     volumes:
       - $PWD/t/tmp:/srv/files

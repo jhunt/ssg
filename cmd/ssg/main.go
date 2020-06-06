@@ -36,11 +36,11 @@ func main() {
 
 		Listen string `cli:"--listen" env:"SSG_LISTEN"`
 
-		Compression string
+		Compression string `cli:"--compression" env:"SSG_COMPRESSION"`
 
-		Encryption     string
-		VaultURL       string `cli:"--vault-url" env:"VAULT_ADDR"`
-		VaultRootToken string `cli:"--token" env:"VAULT_ROOT_TOKEN"`
+		Encryption string `cli:"--encryption" env:"SSG_ENCRYPTION"`
+		VaultURL   string `cli:"--vault-url" env:"SSG_VAULT_URL"`
+		VaultToken string `cli:"--vault-token" env:"SSG_VAULT_TOKEN"`
 
 		Mode     string `cli:"-m, --mode" env:"SSG_MODE"`
 		FileRoot string `cli:"--file-root" env:"SSG_FILE_ROOT"`
@@ -74,6 +74,12 @@ func main() {
 	opts.VaultURL = "http://127.0.0.1:8200"
 
 	env.Override(&opts)
+	if opts.Encryption == "none" {
+		opts.Encryption = ""
+	}
+	if opts.Compression == "none" {
+		opts.Compression = ""
+	}
 
 	_, args, err := cli.Parse(&opts)
 	if err != nil {
@@ -123,6 +129,19 @@ func main() {
 		fmt.Printf("\n")
 		fmt.Printf("  --file-root         Where to store / find files in --mode 'fs'.\n")
 		fmt.Printf("                      Can be set via the @W{$SSG_FILE_ROOT} env var.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  --encryption        Which encryption algorithm to use.  One of:\n")
+		fmt.Printf("                      none, aes256-ctr, aes256-cfb, or aes256-ofb.\n")
+		fmt.Printf("                      Can be set via the @W{$SSG_ENCRYPTION} env var.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  --vault-url         A Vault endpoint, where encryption parameters will\n")
+		fmt.Printf("                      be securely stored.\n")
+		fmt.Printf("                      Only honored when --encryption is not 'none'\n")
+		fmt.Printf("                      Can be set via the @W{$SSG_VAULT_URL} env var.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  --vault-token       A static token for accessing the Vault.\n")
+		fmt.Printf("                      Only honored when --encryption is not 'none'\n")
+		fmt.Printf("                      Can be set via the @W{$SSG_VAULT_TOKEN} env var.\n")
 		fmt.Printf("\n")
 		os.Exit(0)
 	}
@@ -187,17 +206,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	c, err := vault.Connect(opts.VaultURL, opts.VaultRootToken)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to connect to vault at %s\n", opts.VaultURL)
-		os.Exit(1)
-	}
+	if opts.Encryption != "" {
+		c, err := vault.Connect(opts.VaultURL, opts.VaultToken)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to connect to vault at %s\n", opts.VaultURL)
+			os.Exit(1)
+		}
 
-	ssg.SetStreamConfig(api.StreamConfig{
-		Compression: opts.Compression,
-		Encryption:  opts.Encryption,
-		VaultClient: c,
-	})
+		ssg.SetStreamConfig(api.StreamConfig{
+			Compression: opts.Compression,
+			Encryption:  opts.Encryption,
+			VaultClient: c,
+		})
+
+	} else {
+		ssg.SetStreamConfig(api.StreamConfig{
+			Compression: opts.Compression,
+			Encryption:  opts.Encryption,
+		})
+	}
 
 	ssg.Lease = time.Duration(opts.Lease) * time.Second
 	ssg.Admin.Username = opts.AdminUsername
@@ -207,9 +234,13 @@ func main() {
 	http.Handle("/", ssg.Router())
 
 	fmt.Fprintf(os.Stderr, "ssg starting up...\n")
-	fmt.Fprintf(os.Stderr, "ssg using [%s] compression\n", opts.Compression)
-	fmt.Fprintf(os.Stderr, "ssg using [%s] encryption\n", opts.Encryption)
-	fmt.Fprintf(os.Stderr, "connected to vault at %s\n", opts.VaultURL)
+	if opts.Compression != "" {
+		fmt.Fprintf(os.Stderr, "ssg using [%s] compression\n", opts.Compression)
+	}
+	if opts.Encryption != "" {
+		fmt.Fprintf(os.Stderr, "ssg using [%s] encryption\n", opts.Encryption)
+		fmt.Fprintf(os.Stderr, "ssg using vault at %s\n", opts.VaultURL)
+	}
 	fmt.Fprintf(os.Stderr, " - running cleanup routine @C{every %d seconds}\n", opts.Cleanup)
 	go ssg.Sweeper(time.Duration(opts.Cleanup) * time.Second)
 
