@@ -1,0 +1,4 @@
+FROM vault:latest
+RUN apk add curl \
+ && curl -Lo /bin/safe https://github.com/starkandwayne/safe/releases/download/v1.5.6/safe-linux-amd64 \
+ && chmod 755 /bin/safe

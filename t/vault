@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# note: PUBLIC_PORT value doesn't matter...
+PUBLIC_PORT=80 \
+docker-compose -p ssg_integration_tests -f t/docker-compose.yml exec vault safe "$@"

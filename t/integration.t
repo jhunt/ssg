@@ -107,6 +107,9 @@ cmp_deeply($RESPONSE, {
 $TOKEN = $RESPONSE->{token};
 $id    = $RESPONSE->{id};
 $CANON = $RESPONSE->{canon};
+my $secret = $CANON; $secret =~ s|^ssg://cluster1/files/||;
+system("./t/vault check secret/tests/$secret");
+ok $? == 0, 'should have encryption cipher in the vault';
 
 as_admin;
 GET '/streams';

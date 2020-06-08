@@ -22,7 +22,9 @@
 version: '2'
 services:
   vault:
-    image: vault
+    build:
+      context: aux
+      dockerfile: Dockerfile.vault
     environment:
       - VAULT_DEV_ROOT_TOKEN_ID=ichaeZeeth5ichi1OhxooSahpoo8wa
       - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
