@@ -2,12 +2,12 @@ package fs
 
 import (
 	"fmt"
-	"path/filepath"
-	"path"
 	"os"
+	"path"
+	"path/filepath"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
 	"github.com/jhunt/shield-storage-gateway/pkg/rand"
+	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
 )
 
 const RandomFile = ""
@@ -56,7 +56,7 @@ func (f Provider) Upload(relpath string) (provider.Uploader, error) {
 	}
 
 	return &Uploader{
-		file: file,
+		file:    file,
 		relpath: relpath,
 		abspath: abspath,
 	}, nil

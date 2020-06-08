@@ -1,8 +1,8 @@
 package config
 
 import (
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
 
 	"gopkg.in/yaml.v2"
 )

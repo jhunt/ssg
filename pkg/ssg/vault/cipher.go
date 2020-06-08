@@ -2,10 +2,10 @@ package vault
 
 import (
 	"crypto/aes"
-	"crypto/rand"
 	"crypto/cipher"
-	"io"
+	"crypto/rand"
 	"fmt"
+	"io"
 	"strings"
 )
 

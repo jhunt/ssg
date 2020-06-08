@@ -6,11 +6,11 @@ import (
 
 type Uploader struct {
 	key string
-	up *s3.Upload
-	n int64
+	up  *s3.Upload
+	n   int64
 
 	bufn int
-	buf []byte
+	buf  []byte
 }
 
 func (out *Uploader) Write(b []byte) (int, error) {

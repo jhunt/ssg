@@ -18,8 +18,8 @@ type stream struct {
 	renewal time.Duration
 
 	segments int
-	writer provider.Uploader
-	reader provider.Downloader
+	writer   provider.Uploader
+	reader   provider.Downloader
 }
 
 type bucket struct {

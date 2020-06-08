@@ -33,7 +33,7 @@ var _ = Describe("WEBDAV Provider", func() {
 			Ω(os.Getenv("TEST_WEBDAV_URL")).ShouldNot(Equal(""))
 
 			p, err := webdav.Configure(webdav.Endpoint{
-				URL: os.Getenv("TEST_WEBDAV_URL"),
+				URL:      os.Getenv("TEST_WEBDAV_URL"),
 				Username: os.Getenv("TEST_WEBDAV_USERNAME"),
 				Password: os.Getenv("TEST_WEBDAV_PASSWORD"),
 			})
