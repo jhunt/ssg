@@ -18,15 +18,10 @@ func Parse(s string) (*URL, error) {
 			return nil, fmt.Errorf("invalid scheme '%s'", m[1])
 		}
 
-		path := m[4]
-		if path == "/" {
-			path = ""
-		}
-
 		return &URL{
 			Cluster: m[2],
 			Bucket: m[3],
-			Path: path,
+			Path: strings.Trim(m[4], "/"),
 		}, nil
 	}
 	return nil, fmt.Errorf("invalid ssg url")

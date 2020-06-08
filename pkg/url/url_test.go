@@ -14,7 +14,7 @@ var _ = Describe("SSG URLs", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(u.Cluster).Should(Equal("cluster"))
 			Ω(u.Bucket).Should(Equal("bucket"))
-			Ω(u.Path).Should(Equal("/simple-path"))
+			Ω(u.Path).Should(Equal("simple-path"))
 		})
 	})
 
