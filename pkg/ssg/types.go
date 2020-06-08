@@ -17,6 +17,7 @@ type stream struct {
 	expires time.Time
 	renewal time.Duration
 
+	segments int
 	writer provider.Uploader
 	reader provider.Downloader
 }

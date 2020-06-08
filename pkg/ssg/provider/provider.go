@@ -13,6 +13,8 @@ type Provider interface {
 type Uploader interface {
 	io.Writer
 	io.Closer
+	SentUncompressed() int64
+	SentCompressed() int64
 	Path() string
 	Cancel() error
 }
