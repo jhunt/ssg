@@ -119,7 +119,7 @@ cmp_deeply($RESPONSE, {
 $TOKEN = $RESPONSE->{token};
 $id    = $RESPONSE->{id};
 $CANON = $RESPONSE->{canon};
-system("./t/vault check ".vault_secret());
+system("./t/vault check '".vault_secret()."'");
 ok $? == 0, 'should have encryption cipher in the vault';
 
 as_admin;
@@ -148,6 +148,14 @@ cmp_deeply($RESPONSE, {
 	compressed => re(qr/^\d+$/),
 	uncompressed => length("this is the first line\n"),
 });
+
+# check the encryption parameters here,
+# so we don't time out the upload...
+for (qw/alg key iv id/) {
+	system("./t/vault check '".vault_secret().":$_'");
+	ok $? == 0, "should have encryption cipher ($_) in the vault";
+}
+
 ok  -f local_fs_path(), "file should be in file storage";
 is -s local_fs_path(), $RESPONSE->{compressed}, "file should be \$compressed bytes long";
 isnt $RESPONSE->{uncompressed}, $RESPONSE->{compressed}, "uncompressed data should be a different size than compressed";
@@ -214,7 +222,7 @@ ok $SUCCESS
 	or diag $res->as_string;
 ok !-f local_fs_path(), "file should not still be in file storage";
 
-system("./t/vault check ".vault_secret());
+system("./t/vault check '".vault_secret()."'");
 ok $? != 0, 'should no longer have encryption cipher in the vault';
 
 ## timeout
@@ -233,7 +241,7 @@ cmp_deeply($RESPONSE, {
 $TOKEN = $RESPONSE->{token};
 $id    = $RESPONSE->{id};
 $CANON = $RESPONSE->{canon};
-system("./t/vault check ".vault_secret());
+system("./t/vault check '".vault_secret()."'");
 ok $? == 0, 'should have encryption cipher in the vault';
 
 as_agent;
@@ -251,7 +259,7 @@ POST "/blob/$id", {
 };
 ok !$SUCCESS, "posting data after the stream expires should not succeed"
 	or diag $res->as_string;
-system("./t/vault check ".vault_secret());
+system("./t/vault check '".vault_secret()."'");
 ok $? != 0, 'should no longer have encryption cipher in the vault';
 
 done_testing;
