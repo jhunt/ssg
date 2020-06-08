@@ -3,6 +3,7 @@ package ssg
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jhunt/go-log"
@@ -190,11 +191,24 @@ func NewServer(c config.Config) (*Server, error) {
 			p = candidate
 
 		case "s3":
-			log.Infof(LOG+"configuring bucket %v backed by s3 (region=%v, bucket=%v, prefix=%v)", b.Key, b.Provider.S3.Region, b.Provider.S3.Bucket, b.Provider.S3.Prefix)
+			attrs := []string{
+				fmt.Sprintf("region=%v", b.Provider.S3.Region),
+				fmt.Sprintf("bucket=%v", b.Provider.S3.Bucket),
+				fmt.Sprintf("prefix=%v", b.Provider.S3.Prefix),
+			}
+			if b.Provider.S3.URL != "" {
+				attrs = append(attrs, fmt.Sprintf("url=%v", b.Provider.S3.URL))
+			}
+			if b.Provider.S3.UsePath {
+				attrs = append(attrs, "path-based")
+			}
+			log.Infof(LOG+"configuring bucket %v backed by s3 (%s)", b.Key, strings.Join(attrs, ", "))
 			candidate, err := s3.Configure(s3.Endpoint{
+				URL:             b.Provider.S3.URL,
 				Prefix:          b.Provider.S3.Prefix,
 				Region:          b.Provider.S3.Region,
 				Bucket:          b.Provider.S3.Bucket,
+				UsePath:         b.Provider.S3.UsePath,
 				AccessKeyID:     b.Provider.S3.AccessKeyID,
 				SecretAccessKey: b.Provider.S3.SecretAccessKey,
 			})
