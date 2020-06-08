@@ -23,7 +23,7 @@ func (s *Server) startUpload(to *url.URL) (*stream, string, error) {
 		return nil, "", fmt.Errorf("bucket '%s' not found", to.Bucket)
 	}
 
-	uploader, err := bucket.provider.Upload("")
+	uploader, err := bucket.Upload("")
 	if err != nil {
 		return nil, "", err
 	}
@@ -57,7 +57,7 @@ func (s *Server) startDownload(from *url.URL) (*stream, error) {
 		return nil, fmt.Errorf("bucket '%s' not found", from.Bucket)
 	}
 
-	downloader, err := bucket.provider.Download(from.Path)
+	downloader, err := bucket.Download(from.Path)
 	if err != nil {
 		return nil, err
 	}
