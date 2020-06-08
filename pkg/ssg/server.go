@@ -58,9 +58,9 @@ func (s *Server) getUpload(id, token string) (*stream, bool) {
 	log.Debugf(LOG+"looking for upload stream %v", id)
 	upstream, ok := s.uploads[id]
 	if ok {
-		log.Debugf(LOG + "stream found; validating against supplied token")
+		log.Debugf(LOG+"stream %v found; validating against supplied token", id)
 	} else {
-		log.Debugf(LOG + "stream not found in server records")
+		log.Debugf(LOG+"stream %v not found in server records", id)
 	}
 	return upstream, ok && upstream.authorize(token)
 }

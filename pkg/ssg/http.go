@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jhunt/go-log"
 	"github.com/jhunt/go-route"
 
 	"github.com/jhunt/shield-storage-gateway/pkg/url"
@@ -168,6 +169,8 @@ func (s *Server) Router(helo string) *route.Router {
 			r.Fail(route.Bad(err, "unable to decode base64 payload"))
 			return
 		}
+
+		log.Debugf(LOG+"uploading %d bytes (eof: %v) to stream %v", len(b), in.EOF, upstream.id)
 		n, err := upstream.writer.Write(b)
 		if err != nil {
 			r.Fail(route.Oops(err, "unable to upload data to stream"))
@@ -177,6 +180,7 @@ func (s *Server) Router(helo string) *route.Router {
 		upstream.segments++
 
 		if in.EOF {
+			log.Debugf(LOG+"EOF signaled by client; closing upload stream %v", upstream.id)
 			upstream.writer.Close()
 			s.forget(upstream)
 
