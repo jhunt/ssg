@@ -1,7 +1,9 @@
 package s3
 
 import (
+	"fmt"
 	"io/ioutil"
+	"net/url"
 
 	"github.com/jhunt/go-s3"
 
@@ -12,9 +14,11 @@ import (
 const RandomKey = ""
 
 type Endpoint struct {
+	URL             string
 	Region          string
 	Bucket          string
 	Prefix          string
+	UsePath         bool
 	AccessKeyID     string
 	SecretAccessKey string
 }
@@ -25,9 +29,26 @@ type Provider struct {
 }
 
 func Configure(e Endpoint) (Provider, error) {
+	var host, scheme string
+
+	if e.URL != "" {
+		u, err := url.Parse(e.URL)
+		if err != nil {
+			return Provider{}, err
+		}
+		if u.Scheme != "http" && u.Scheme != "https" {
+			return Provider{}, fmt.Errorf("invalid s3 base url '%s': no http/https scheme", e.URL)
+		}
+		scheme = u.Scheme
+		host = u.Host
+	}
+
 	client, err := s3.NewClient(&s3.Client{
+		Domain:          host,
+		Protocol:        scheme,
 		Bucket:          e.Bucket,
 		Region:          e.Region,
+		UsePathBuckets:  e.UsePath,
 		AccessKeyID:     e.AccessKeyID,
 		SecretAccessKey: e.SecretAccessKey,
 	})

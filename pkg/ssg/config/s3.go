@@ -5,6 +5,12 @@ package config
 // that of Amazon's Simple Scalable Storage service, S3.
 //
 type S3 struct {
+	// URL identifies where the S3 (or S3-like) API endpoint
+	// can be found.  This is mostly used for non-Amazon
+	// implementations, like Minio or Linode OBJ.
+	//
+	URL string `yaml:"url"`
+
 	// Region identifies the Amazon region in which S3
 	// bucket operations are to be carried out.  Usually,
 	// this is the region in which the bucket was created.
@@ -24,6 +30,13 @@ type S3 struct {
 	// with a trailing forward slash ('/').
 	//
 	Prefix string `yaml:"prefix"`
+
+	// UsePath indicates that the bucket should be sent in
+	// the request URL path, not in the hostname, when
+	// communicating with the backend.  Official S3 uses
+	// DNS-based bucket addressing, but most work-alikes
+	// do not.
+	UsePath bool `yaml:"usePath"`
 
 	// AccessKeyID contains the Access Key ID to use for
 	// authenticating to the S3 API.
