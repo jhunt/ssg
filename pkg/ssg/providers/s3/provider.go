@@ -43,7 +43,7 @@ func Configure(e Endpoint) (Provider, error) {
 
 func (p Provider) Upload(hint string) (provider.Uploader, error) {
 	key := hint
-	if key == "" {
+	if key == RandomKey {
 		key = rand.Path()
 	}
 
