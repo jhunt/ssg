@@ -36,9 +36,26 @@ services:
       - server
       - -dev
 
+  minio:
+    image: minio/minio
+    environment:
+      - MINIO_REGION_NAME=us-east-1
+      - MINIO_ACCESS_KEY=AKI0f0f0f0f0f0f
+      - MINIO_SECRET_KEY=NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+    entrypoint: []
+    command:
+      - /bin/sh
+      - -c
+      - mkdir -p /data/ssg-testing && /usr/bin/docker-entrypoint.sh server /data
+
+  webdav:
+    image: shieldproject/webdav
+
   gateway:
     depends_on:
       - vault
+      - minio
+      - webdav
     build: &build
       context: ..
       #args:

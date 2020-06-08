@@ -76,190 +76,199 @@ system('t/setup');
 is $?, 0, 't/setup should exit zero (success)'
   or do { done_testing; exit; };
 
-as_agent;
-POST '/control', { kind => 'upload', target => 'ssg://cluster1/files' };
-ok !$SUCCESS, "attempting to create an upload as the agent should fail"
-	or diag $res->as_string;
-POST '/control', { kind => 'download', target => 'ssg://cluster1/files/a/file' };
-ok !$SUCCESS, "attempting to create a download as the agent should fail"
-	or diag $res->as_string;
-POST '/control', { kind => 'expunge', target => 'ssg://cluster1/files/a/file' };
-ok !$SUCCESS, "attempting to expunge a file as the agent should fail"
-	or diag $res->as_string;
+for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
+	subtest "$BUCKET bucket" => sub {
+		as_agent;
+		POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
+		ok !$SUCCESS, "attempting to create an upload as the agent should fail"
+			or diag $res->as_string;
+		POST '/control', { kind => 'download', target => "ssg://cluster1/$BUCKET/a/file" };
+		ok !$SUCCESS, "attempting to create a download as the agent should fail"
+			or diag $res->as_string;
+		POST '/control', { kind => 'expunge', target => "ssg://cluster1/$BUCKET/a/file" };
+		ok !$SUCCESS, "attempting to expunge a file as the agent should fail"
+			or diag $res->as_string;
 
-#as_admin;
-#POST '/control', { kind => 'upload', target => 'ssg://cluster1/files' };
-#ok !$SUCCESS, "attempting to create an upload as the admin should fail"
-#	or diag $res->as_string;
-#POST '/control', { kind => 'download', target => 'ssg://cluster1/files/a/file' };
-#ok !$SUCCESS, "attempting to create a download as the admin should fail"
-#	or diag $res->as_string;
-#POST '/control', { kind => 'expunge', target => 'ssg://cluster1/files/a/file' };
-#ok !$SUCCESS, "attempting to expunge a file as the admin should fail"
-#	or diag $res->as_string;
+		#as_admin;
+		#POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
+		#ok !$SUCCESS, "attempting to create an upload as the admin should fail"
+		#	or diag $res->as_string;
+		#POST '/control', { kind => 'download', target => "ssg://cluster1/$BUCKET/a/file" };
+		#ok !$SUCCESS, "attempting to create a download as the admin should fail"
+		#	or diag $res->as_string;
+		#POST '/control', { kind => 'expunge', target => "ssg://cluster1/$BUCKET/a/file" };
+		#ok !$SUCCESS, "attempting to expunge a file as the admin should fail"
+		#	or diag $res->as_string;
 
-as_admin;
-GET '/streams';
-ok $SUCCESS, "should be able to retrieve streams as admin"
-	or diag $res->as_string;
-cmp_deeply($RESPONSE, []);
+		as_admin;
+		GET '/streams';
+		ok $SUCCESS, "should be able to retrieve streams as admin"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, [], "no streams should exist");
 
-as_control;
-POST '/control', { kind => 'upload', target => 'ssg://cluster1/files' };
-ok $SUCCESS, "creating an upload as the controller should succeed"
-	or diag $res->as_string;
-cmp_deeply($RESPONSE, {
-	kind    => 'upload',
-	id      => re(qr/^[0-9a-v]+$/i),
-	token   => re(qr/^[0-9a-v]+$/i),
-	canon   => re(qr{^ssg://cluster1/files/.+$}),
-	expires => ignore(),
-});
+		as_control;
+		POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
+		ok $SUCCESS, "creating an upload as the controller should succeed"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, {
+			kind    => 'upload',
+			id      => re(qr/^[0-9a-v]+$/i),
+			token   => re(qr/^[0-9a-v]+$/i),
+			canon   => re(qr{^ssg://cluster1/$BUCKET/.+$}),
+			expires => ignore(),
+		}, "creating an upload should get us the stream details");
 
-$TOKEN = $RESPONSE->{token};
-$id    = $RESPONSE->{id};
-$CANON = $RESPONSE->{canon};
-system("./t/vault check '".vault_secret()."'");
-ok $? == 0, 'should have encryption cipher in the vault';
+		$TOKEN = $RESPONSE->{token};
+		$id    = $RESPONSE->{id};
+		$CANON = $RESPONSE->{canon};
+		system("./t/vault check '".vault_secret()."'");
+		ok $? == 0, 'should have encryption cipher in the vault';
 
-as_admin;
-GET '/streams';
-ok $SUCCESS, "should be able to retrieve streams as admin"
-	or diag $res->as_string;
-cmp_deeply($RESPONSE, [
-	{
-		kind     => 'upload',
-		id       => $id,
-		canon    => $CANON,
-		received => 0,
-		expires  => ignore(),
-	},
-]);
+		as_admin;
+		GET '/streams';
+		ok $SUCCESS, "should be able to retrieve streams as admin"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, [
+			{
+				kind     => 'upload',
+				id       => $id,
+				canon    => $CANON,
+				received => 0,
+				expires  => ignore(),
+			},
+		], "our upload stream should be listed");
 
-as_agent;
-POST "/blob/$id", {
-	data => encode_base64("this is the first line\n"),
-	eof  => $JSON::true,
-};
-ok $SUCCESS, "posting data to the upload stream (as the agent) should succeed"
-	or diag $res->as_string;
-cmp_deeply($RESPONSE, {
-	segments => 1,
-	compressed => re(qr/^\d+$/),
-	uncompressed => length("this is the first line\n"),
-});
+		as_agent;
+		POST "/blob/$id", {
+			data => encode_base64("this is the first line\n"),
+			eof  => $JSON::true,
+		};
+		ok $SUCCESS, "posting data to the upload stream (as the agent) should succeed"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, {
+			segments => 1,
+			compressed => re(qr/^\d+$/),
+			uncompressed => length("this is the first line\n"),
+		}, "posting the final segment should return blob details");
 
-# check the encryption parameters here,
-# so we don't time out the upload...
-for (qw/alg key iv id/) {
-	system("./t/vault check '".vault_secret().":$_'");
-	ok $? == 0, "should have encryption cipher ($_) in the vault";
+		# check the encryption parameters here,
+		# so we don't time out the upload...
+		for (qw/alg key iv id/) {
+			system("./t/vault check '".vault_secret().":$_'");
+			ok $? == 0, "should have encryption cipher ($_) in the vault";
+		}
+
+		ok  -f local_fs_path(), "file should be in file storage"
+			if $BUCKET eq 'files';
+		is -s local_fs_path(), $RESPONSE->{compressed}, "file should be \$compressed bytes long"
+			if $BUCKET eq 'files';
+		isnt $RESPONSE->{uncompressed}, $RESPONSE->{compressed}, "uncompressed data should be a different size than compressed";
+
+		POST "/blob/$id", {
+			data => encode_base64("this is too much stuff\n"),
+			eof => $JSON::false,
+		};
+		ok !$SUCCESS, "adding more data once sending the EOF should fail"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, { error => ignore() }, "adding more data after EOF should return an error");
+
+		GET "/blob/$id";
+		ok !$SUCCESS, "attempting to download the blob with the same id/token should fail"
+			or diag $res->as_string;
+
+		as_admin;
+		GET '/streams';
+		ok $SUCCESS, "should be able to retrieve streams as admin"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, [], "no streams should exist after closing our upload");
+
+		as_control;
+		POST "/control", { kind => 'download', target => $CANON };
+		ok $SUCCESS, "creating a download as the controller should succeed"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, {
+			kind    => 'download',
+			canon   => $CANON,
+			id      => ignore(),
+			token   => ignore(),
+			expires => ignore(),
+		}, "creating a download should return stream details");
+		isnt $TOKEN, $RESPONSE->{token}, "should get a new token for the download";
+		isnt $id,    $RESPONSE->{id},    "should get a new id for the download";
+
+		$TOKEN = $RESPONSE->{token};
+		$id    = $RESPONSE->{id};
+
+		as_admin;
+		GET '/streams';
+		ok $SUCCESS, "should be able to retrieve streams as admin"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, [
+			{
+				kind     => 'download',
+				id       => $id,
+				canon    => $CANON,
+				received => 0,
+				expires  => ignore(),
+			},
+		], "our download stream should be listed");
+
+		as_agent;
+		GET "/blob/$id";
+		ok $SUCCESS, "should be able to download the blob"
+			or diag $res->as_string;
+		is $res->decoded_content, "this is the first line\n",
+			"downloading the blob should return original data posted";
+
+		as_control;
+		ok  -f local_fs_path(), "file should still be in file storage"
+			if $BUCKET eq 'files';
+		POST "/control", { kind => 'expunge', target => $CANON };
+		ok $SUCCESS, "should be able to expunge the blob"
+			or diag $res->as_string;
+		ok !-f local_fs_path(), "file should not still be in file storage"
+			if $BUCKET eq 'files';
+
+		system("./t/vault check '".vault_secret()."'");
+		ok $? != 0, 'should no longer have encryption cipher in the vault';
+
+		## timeout
+		as_control;
+		POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
+		ok $SUCCESS, "creating an upload as the controller should succeed"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, {
+			kind    => 'upload',
+			id      => re(qr/^[0-9a-v]+$/i),
+			token   => re(qr/^[0-9a-v]+$/i),
+			canon   => re(qr{^ssg://cluster1/$BUCKET/.+$}),
+			expires => ignore(),
+		}, "our upload stream should be listed");
+
+		$TOKEN = $RESPONSE->{token};
+		$id    = $RESPONSE->{id};
+		$CANON = $RESPONSE->{canon};
+		system("./t/vault check '".vault_secret()."'");
+		ok $? == 0, 'should have encryption cipher in the vault';
+
+		as_agent;
+		POST "/blob/$id", {
+			data => encode_base64("it's---"),
+			eof  => $JSON::false,
+		};
+		ok $SUCCESS, "posting data to the upload stream (as the agent) should succeed"
+			or diag $res->as_string;
+		diag "sleeping 5s waiting for our blob to timeout...";
+		sleep 5;
+		POST "/blob/$id", {
+			data => encode_base64("the rest of the file...\n"),
+			eof  => $JSON::true,
+		};
+		ok !$SUCCESS, "posting data after the stream expires should not succeed"
+			or diag $res->as_string;
+		system("./t/vault check '".vault_secret()."'");
+		ok $? != 0, 'should no longer have encryption cipher in the vault';
+	}
 }
-
-ok  -f local_fs_path(), "file should be in file storage";
-is -s local_fs_path(), $RESPONSE->{compressed}, "file should be \$compressed bytes long";
-isnt $RESPONSE->{uncompressed}, $RESPONSE->{compressed}, "uncompressed data should be a different size than compressed";
-
-POST "/blob/$id", {
-	data => encode_base64("this is too much stuff\n"),
-	eof => $JSON::false,
-};
-ok !$SUCCESS, "adding more data once sending the EOF should fail"
-	or diag $res->as_string;
-cmp_deeply($RESPONSE, { error => ignore() });
-
-GET "/blob/$id";
-ok !$SUCCESS, "attempting to download the blob with the same id/token should fail"
-	or diag $res->as_string;
-
-as_admin;
-GET '/streams';
-ok $SUCCESS, "should be able to retrieve streams as admin"
-	or diag $res->as_string;
-cmp_deeply($RESPONSE, []);
-
-as_control;
-POST "/control", { kind => 'download', target => $CANON };
-ok $SUCCESS, "creating a download as the controller should succeed"
-	or diag $res->as_string;
-cmp_deeply($RESPONSE, {
-	kind    => 'download',
-	canon   => $CANON,
-	id      => ignore(),
-	token   => ignore(),
-	expires => ignore(),
-});
-isnt $TOKEN, $RESPONSE->{token}, "should get a new token for the download";
-isnt $id,    $RESPONSE->{id},    "should get a new id for the download";
-
-$TOKEN = $RESPONSE->{token};
-$id    = $RESPONSE->{id};
-
-as_admin;
-GET '/streams';
-ok $SUCCESS, "should be able to retrieve streams as admin"
-	or diag $res->as_string;
-cmp_deeply($RESPONSE, [
-	{
-		kind     => 'download',
-		id       => $id,
-		canon    => $CANON,
-		received => 0,
-		expires  => ignore(),
-	},
-]);
-
-as_agent;
-GET "/blob/$id";
-ok $SUCCESS, "should be able to download the blob"
-	or diag $res->as_string;
-is $res->decoded_content, "this is the first line\n";
-
-as_control;
-ok  -f local_fs_path(), "file should still be in file storage";
-POST "/control", { kind => 'expunge', target => $CANON };
-ok $SUCCESS
-	or diag $res->as_string;
-ok !-f local_fs_path(), "file should not still be in file storage";
-
-system("./t/vault check '".vault_secret()."'");
-ok $? != 0, 'should no longer have encryption cipher in the vault';
-
-## timeout
-as_control;
-POST '/control', { kind => 'upload', target => 'ssg://cluster1/files' };
-ok $SUCCESS, "creating an upload as the controller should succeed"
-	or diag $res->as_string;
-cmp_deeply($RESPONSE, {
-	kind    => 'upload',
-	id      => re(qr/^[0-9a-v]+$/i),
-	token   => re(qr/^[0-9a-v]+$/i),
-	canon   => re(qr{^ssg://cluster1/files/.+$}),
-	expires => ignore(),
-});
-
-$TOKEN = $RESPONSE->{token};
-$id    = $RESPONSE->{id};
-$CANON = $RESPONSE->{canon};
-system("./t/vault check '".vault_secret()."'");
-ok $? == 0, 'should have encryption cipher in the vault';
-
-as_agent;
-POST "/blob/$id", {
-	data => encode_base64("it's---"),
-	eof  => $JSON::false,
-};
-ok $SUCCESS, "posting data to the upload stream (as the agent) should succeed"
-	or diag $res->as_string;
-diag "sleeping 5s waiting for our blob to timeout...";
-sleep 5;
-POST "/blob/$id", {
-	data => encode_base64("the rest of the file...\n"),
-	eof  => $JSON::true,
-};
-ok !$SUCCESS, "posting data after the stream expires should not succeed"
-	or diag $res->as_string;
-system("./t/vault check '".vault_secret()."'");
-ok $? != 0, 'should no longer have encryption cipher in the vault';
 
 done_testing;

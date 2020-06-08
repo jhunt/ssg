@@ -23,3 +23,35 @@ buckets:
       kind: fs
       fs:
         root: /srv/files
+
+  - key: minio
+    name: Minio (S3)
+    provider:
+      kind: s3
+      s3:
+        url:     http://minio:9000
+        region:  us-east-1
+        bucket:  ssg-testing
+        usePath: true
+        accessKeyID:     AKI0f0f0f0f0f0f
+        secretAccessKey: NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+
+  - key: minio-with-prefix
+    name: Minio (S3)
+    provider:
+      kind: s3
+      s3:
+        url:     http://minio:9000
+        region:  us-east-1
+        bucket:  ssg-testing
+        prefix:  back/ups/
+        usePath: true
+        accessKeyID:     AKI0f0f0f0f0f0f
+        secretAccessKey: NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+
+  - key: webdav
+    name: WebDAV
+    provider:
+      kind: webdav
+      webdav:
+        url: http://webdav:80

@@ -4,6 +4,7 @@ set -e
 exec 1>&2
 echo
 
+export PUBLIC_PORT=${PUBLIC_PORT:-9077}
 if [[ -z "${SSG_NO_BUILD:-}" ]]; then
   echo "» building SSG API OCI image…"
   docker-compose -p ssg_integration_tests -f t/docker-compose.yml build
