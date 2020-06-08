@@ -82,3 +82,7 @@ func (v Vault) Get(id string) (vault.Cipher, error) {
 
 	return c, nil
 }
+
+func (v Vault) Delete(id string) error {
+	return v.kv.Delete(filepath.Join(v.prefix, id), &vaultkv.KVDeleteOpts{V1Destroy: true})
+}
