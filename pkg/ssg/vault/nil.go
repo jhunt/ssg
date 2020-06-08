@@ -15,3 +15,7 @@ func (NilVault) Set(_ string, _ Cipher) error {
 func (NilVault) Get(_ string) (Cipher, error) {
 	return Cipher{}, fmt.Errorf("no vault!")
 }
+
+func (NilVault) Delete(_ string) error {
+	return fmt.Errorf("no vault!")
+}

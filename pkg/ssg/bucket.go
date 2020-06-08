@@ -47,10 +47,11 @@ func (b *bucket) Download(s string) (provider.Downloader, error) {
 	return downloader, nil
 }
 
-func (b *bucket) encrypt(up provider.Uploader) (provider.Uploader, error) {
-	return up, nil
-}
-
-func (b *bucket) decrypt(down provider.Downloader) (provider.Downloader, error) {
-	return down, nil
+func (b *bucket) Expunge(s string) error {
+	if b.encryption != "none" {
+		if err := b.vault.Delete(s); err != nil {
+			return err
+		}
+	}
+	return b.provider.Expunge(s)
 }

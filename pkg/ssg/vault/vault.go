@@ -9,9 +9,12 @@ import (
 type Vault interface {
 	Set(string, Cipher) error
 	Get(string) (Cipher, error)
+	Delete(string) error
 }
 
 type EncryptedUploader struct {
+	id    string
+	v     Vault
 	wr    io.WriteCloser
 	inner provider.Uploader
 }
@@ -29,7 +32,11 @@ func (e EncryptedUploader) Path() string {
 }
 
 func (e EncryptedUploader) Cancel() error {
-	return e.inner.Cancel()
+	err := e.inner.Cancel()
+	if err != nil {
+		return err
+	}
+	return e.v.Delete(e.id)
 }
 
 func Encrypt(v Vault, id, alg string, up provider.Uploader) (provider.Uploader, error) {
@@ -49,6 +56,8 @@ func Encrypt(v Vault, id, alg string, up provider.Uploader) (provider.Uploader, 
 	}
 
 	return EncryptedUploader{
+		id:    id,
+		v:     v,
 		wr:    wr,
 		inner: up,
 	}, nil

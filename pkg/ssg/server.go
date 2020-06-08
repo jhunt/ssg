@@ -103,7 +103,7 @@ func (s *Server) expunge(where *url.URL) error {
 		return fmt.Errorf("bucket '%s' not found", where.Bucket)
 	}
 
-	return bucket.provider.Expunge(where.Path)
+	return bucket.Expunge(where.Path)
 }
 
 func NewServer(c config.Config) (*Server, error) {
