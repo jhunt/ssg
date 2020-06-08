@@ -1,6 +1,8 @@
 ---
 cluster: cluster1
 bind: ':8080'
+maxLease: 3
+sweepInterval: 1
 controlTokens:
   - 'test-control-token-apqlwoskeij'
   - 'test-admin-token-ghtyyfjkrudke'

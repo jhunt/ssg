@@ -14,10 +14,22 @@ $ENV{PUBLIC_PORT} = 9077;
 
 my $UA = LWP::UserAgent->new(agent => 'ssg-test/'.strftime("%Y%m%dT%H%M%S", gmtime())."-$$");
 my $BASE_URL = "http://127.0.0.1:$ENV{PUBLIC_PORT}";
-my ($id, $CANON, $TOKEN, $AUTH);
+my ($TOKEN, $AUTH);
 sub as_control { $AUTH = 'test-control-token-apqlwoskeij'; }
 sub as_admin   { $AUTH = 'test-admin-token-ghtyyfjkrudke'; }
 sub as_agent   { $AUTH = undef; }
+
+my ($id, $CANON);
+sub local_fs_path {
+	my $path = $CANON;
+	$path =~ s|^ssg://[^/]*/[^/]*/?|t/tmp/|;
+	return $path;
+}
+sub vault_secret {
+	my $path = $CANON;
+	$path =~ s|ssg://[^/]*/[^/]*/?|secret/tests/|;
+	return $path;
+}
 
 sub maybe_json {
 	my ($raw) = @_;
@@ -62,7 +74,7 @@ sub POST {
 diag "setting up docker-compose integration environment...\n";
 system('t/setup');
 is $?, 0, 't/setup should exit zero (success)'
-  or done_testing;
+  or do { done_testing; exit; };
 
 as_agent;
 POST '/control', { kind => 'upload', target => 'ssg://cluster1/files' };
@@ -107,8 +119,7 @@ cmp_deeply($RESPONSE, {
 $TOKEN = $RESPONSE->{token};
 $id    = $RESPONSE->{id};
 $CANON = $RESPONSE->{canon};
-my $secret = $CANON; $secret =~ s|^ssg://cluster1/files/||;
-system("./t/vault check secret/tests/$secret");
+system("./t/vault check ".vault_secret());
 ok $? == 0, 'should have encryption cipher in the vault';
 
 as_admin;
@@ -132,7 +143,14 @@ POST "/blob/$id", {
 };
 ok $SUCCESS, "posting data to the upload stream (as the agent) should succeed"
 	or diag $res->as_string;
-cmp_deeply($RESPONSE, { ok => re(qr/uploaded [0-9]+ bytes \(and finished\)/i) });
+cmp_deeply($RESPONSE, {
+	segments => 1,
+	compressed => re(qr/^\d+$/),
+	uncompressed => length("this is the first line\n"),
+});
+ok  -f local_fs_path(), "file should be in file storage";
+is -s local_fs_path(), $RESPONSE->{compressed}, "file should be \$compressed bytes long";
+isnt $RESPONSE->{uncompressed}, $RESPONSE->{compressed}, "uncompressed data should be a different size than compressed";
 
 POST "/blob/$id", {
 	data => encode_base64("this is too much stuff\n"),
@@ -190,11 +208,50 @@ ok $SUCCESS, "should be able to download the blob"
 is $res->decoded_content, "this is the first line\n";
 
 as_control;
-my $file = $CANON; $file =~ s|^ssg://cluster1/files/||;
-ok  -f "t/tmp/$file", "file should still be in file storage";
-#POST "/control", { kind => 'expunge', target => $CANON };
-#ok $SUCCESS
-#	or diag $res->as_string;
-#ok !-f "t/tmp/$file", "file should not still be in file storage";
+ok  -f local_fs_path(), "file should still be in file storage";
+POST "/control", { kind => 'expunge', target => $CANON };
+ok $SUCCESS
+	or diag $res->as_string;
+ok !-f local_fs_path(), "file should not still be in file storage";
+
+system("./t/vault check ".vault_secret());
+ok $? != 0, 'should no longer have encryption cipher in the vault';
+
+## timeout
+as_control;
+POST '/control', { kind => 'upload', target => 'ssg://cluster1/files' };
+ok $SUCCESS, "creating an upload as the controller should succeed"
+	or diag $res->as_string;
+cmp_deeply($RESPONSE, {
+	kind    => 'upload',
+	id      => re(qr/^[0-9a-v]+$/i),
+	token   => re(qr/^[0-9a-v]+$/i),
+	canon   => re(qr{^ssg://cluster1/files/.+$}),
+	expires => ignore(),
+});
+
+$TOKEN = $RESPONSE->{token};
+$id    = $RESPONSE->{id};
+$CANON = $RESPONSE->{canon};
+system("./t/vault check ".vault_secret());
+ok $? == 0, 'should have encryption cipher in the vault';
+
+as_agent;
+POST "/blob/$id", {
+	data => encode_base64("it's---"),
+	eof  => $JSON::false,
+};
+ok $SUCCESS, "posting data to the upload stream (as the agent) should succeed"
+	or diag $res->as_string;
+diag "sleeping 5s waiting for our blob to timeout...";
+sleep 5;
+POST "/blob/$id", {
+	data => encode_base64("the rest of the file...\n"),
+	eof  => $JSON::true,
+};
+ok !$SUCCESS, "posting data after the stream expires should not succeed"
+	or diag $res->as_string;
+system("./t/vault check ".vault_secret());
+ok $? != 0, 'should no longer have encryption cipher in the vault';
 
 done_testing;
