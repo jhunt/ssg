@@ -20,7 +20,11 @@ func (z *ZlibUploader) Write(b []byte) (int, error) {
 }
 
 func (z *ZlibUploader) Close() error {
-	return z.w.Close()
+	if err := z.w.Close(); err != nil {
+		return err
+	}
+	// zlib.Writer's Close() does NOT close the underlying io.Writer...
+	return z.inner.Close()
 }
 
 func (z *ZlibUploader) SentCompressed() int64 {
