@@ -20,10 +20,10 @@ func (s *Server) Sweep() {
 			total += 1
 			if upload.expired() {
 				if !logged {
-					log.Debugf("sweeping to clean out expired upload / download streams...")
+					log.Debugf(LOG + "sweeping to clean out expired upload / download streams...")
 					logged = true
 				}
-				log.Debugf("clearing out upload stream [%s]... it expired on %s", id, upload.expires)
+				log.Debugf(LOG+"clearing out upload stream %v... it expired on %s", id, upload.expires)
 				cancel[upload.id] = upload.writer
 				delete(s.uploads, id)
 			}
@@ -32,23 +32,23 @@ func (s *Server) Sweep() {
 			total += 1
 			if download.expired() {
 				if !logged {
-					log.Debugf("sweeping to clean out expired upload / download streams...")
+					log.Debugf(LOG + "sweeping to clean out expired upload / download streams...")
 					logged = true
 				}
-				log.Debugf("clearing out download stream [%s]...", id)
+				log.Debugf(LOG+"clearing out download stream %v... it expired on %s", id, download.expires)
 				delete(s.downloads, id)
 			}
 		}
 		s.lock.Unlock()
 
 		if len(cancel) > 0 {
-			log.Debugf("swept up: clearing out %d of %d streams", len(cancel), total)
+			log.Debugf(LOG+"swept up: clearing out %d of %d streams", len(cancel), total)
 			for id, wr := range cancel {
-				log.Debugf("canceling upload stream [%s]...", id)
+				log.Debugf(LOG+"canceling upload stream %v...", id)
 				wr.Close()
 				wr.Cancel()
 			}
-			log.Debugf("canceled all expired streams.")
+			log.Debugf(LOG+"canceled all %d expired upload streams", len(cancel))
 		}
 	}
 }

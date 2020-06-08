@@ -13,22 +13,18 @@ func (b *bucket) Upload(s string) (provider.Uploader, error) {
 		return nil, err
 	}
 
-	log.Debugf("bucket.Upload(%v): encryption is '%s'", s, b.encryption)
+	log.Debugf(LOG+"blobs in bucket %v use encryption algorithm %v", b.key, b.encryption)
 	if b.encryption != "none" {
-		log.Debugf("bucket.Upload(%v): wrapping uploader with encrypting stream", s)
 		uploader, err = vault.Encrypt(b.vault, uploader.Path(), b.encryption, uploader)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	log.Debugf("bucket.Upload(%v): compression is '%s'", s, b.compression)
-	if b.compression != "none" {
-		log.Debugf("bucket.Upload(%v): wrapping uploader with compressing stream", s)
-		uploader, err = provider.Compress(uploader, b.compression)
-		if err != nil {
-			return nil, err
-		}
+	log.Debugf(LOG+"blobs in bucket %v use compression algorithm %v", b.key, b.compression)
+	uploader, err = provider.Compress(uploader, b.compression)
+	if err != nil {
+		return nil, err
 	}
 
 	return uploader, nil
@@ -40,6 +36,7 @@ func (b *bucket) Download(s string) (provider.Downloader, error) {
 		return nil, err
 	}
 
+	log.Debugf(LOG+"blobs in bucket %v use encryption algorithm %v", b.key, b.encryption)
 	if b.encryption != "none" {
 		downloader, err = vault.Decrypt(b.vault, s, downloader)
 		if err != nil {
@@ -47,6 +44,7 @@ func (b *bucket) Download(s string) (provider.Downloader, error) {
 		}
 	}
 
+	log.Debugf(LOG+"blobs in bucket %v use compression algorithm %v", b.key, b.compression)
 	downloader, err = provider.Decompress(downloader, b.compression)
 	if err != nil {
 		return nil, err
@@ -56,7 +54,9 @@ func (b *bucket) Download(s string) (provider.Downloader, error) {
 }
 
 func (b *bucket) Expunge(s string) error {
+	log.Debugf(LOG+"expunging %s from bucket", s)
 	if b.encryption != "none" {
+		log.Debugf(LOG+"blobs in bucket %v are encrypted; removing cipher parameters from vault", b.key)
 		if err := b.vault.Delete(s); err != nil {
 			return err
 		}
