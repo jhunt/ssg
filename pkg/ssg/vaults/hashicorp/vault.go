@@ -7,6 +7,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/jhunt/go-log"
+
 	"github.com/cloudfoundry-community/vaultkv"
 	"github.com/jhunt/shield-storage-gateway/pkg/ssg/vault"
 )
@@ -38,6 +40,7 @@ func Configure(e Endpoint) (Vault, error) {
 		AuthToken: e.Token,
 	}
 
+	log.Infof(LOG+"configuring hashicorp vault at %v, with prefix=%v", e.URL, e.Prefix)
 	return Vault{
 		prefix: path.Clean(e.Prefix),
 		client: c,
@@ -46,6 +49,7 @@ func Configure(e Endpoint) (Vault, error) {
 }
 
 func (v Vault) Set(id string, c vault.Cipher) error {
+	log.Debugf(LOG+"persisting secret %v for cipher [alg=%v]", id, c.Algorithm)
 	_, err := v.kv.Set(filepath.Join(v.prefix, id), map[string]string{
 		"id":  id,
 		"key": hex.EncodeToString(c.Key),
@@ -56,6 +60,8 @@ func (v Vault) Set(id string, c vault.Cipher) error {
 }
 
 func (v Vault) Get(id string) (vault.Cipher, error) {
+	log.Debugf(LOG+"retrieving secret %v", id)
+
 	var in struct {
 		ID  string `json:"id"`
 		Key string `json:"key"`
@@ -84,5 +90,6 @@ func (v Vault) Get(id string) (vault.Cipher, error) {
 }
 
 func (v Vault) Delete(id string) error {
+	log.Debugf(LOG+"deleting secret %v", id)
 	return v.kv.Delete(filepath.Join(v.prefix, id), &vaultkv.KVDeleteOpts{V1Destroy: true})
 }
