@@ -70,8 +70,10 @@ func (p Provider) Upload(hint string) (provider.Uploader, error) {
 	}
 	done := make(chan int)
 	go func() {
-		res, _ := p.client.Do(req)
-		res.Body.Close()
+		res, err := p.client.Do(req)
+		if err == nil {
+			res.Body.Close()
+		}
 		done <- 1
 	}()
 	return &Uploader{
