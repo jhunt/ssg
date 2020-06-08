@@ -17,5 +17,7 @@ while [[ $n != 0 ]]; do
   if curl --connect-timeout 1 -sf http://127.0.0.1:$PUBLIC_PORT/ >/dev/null; then
     exit 0
   fi
+  sleep 0.1
+  n=$((n - 1))
 done
 exit 1

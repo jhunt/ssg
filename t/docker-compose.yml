@@ -41,19 +41,10 @@ services:
       context: ..
       #args:
       #  VERSION: 0.0.0
-    ports: ["$PUBLIC_PORT:3100"]
+    ports: ["$PUBLIC_PORT:8080"]
     environment:
-      - SSG_LISTEN=:3100
       - SSG_LOG_LEVEL=debug
-      - SSG_MODE=fs
-      - SSG_FILE_ROOT=/srv/files
-      - SSG_ADMIN_USERNAME=test-admin
-      - SSG_ADMIN_PASSWORD=t-a-sekrit
-      - SSG_CONTROL_USERNAME=test-control
-      - SSG_CONTROL_PASSWORD=t-c-sekrit
-      - SSG_COMPRESSION=zlib
-      - SSG_ENCRYPTION=aes256-ctr
-      - SSG_VAULT_URL=http://vault:8200
-      - SSG_VAULT_TOKEN=ichaeZeeth5ichi1OhxooSahpoo8wa
+      - SSG_CONFIG=/etc/ssg/ssg.yml
     volumes:
+      - $PWD/t/ssg.yml:/etc/ssg/ssg.yml
       - $PWD/t/tmp:/srv/files

@@ -1,3 +1,5 @@
 /ssg
+/shield-storage-gateway
 /tmp
 /t/tmp
+/pkg/ssg/providers/fs/test/root

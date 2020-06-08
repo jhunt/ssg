@@ -1,9 +1,5 @@
 **
-!/api
-!/backend
-!/cmd
-!/compress
-!/crypt
-!/vault
+!/*.go
+!/pkg
 !/go.mod
 !/go.sum
