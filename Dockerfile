@@ -4,7 +4,7 @@ ARG VERSION
 WORKDIR /app
 COPY . /app
 
-RUN go build -ldflags "-linkmode external -extldflags -static -X main.Version=$VERSION" ./cmd/ssg
+RUN go build -o ssg -ldflags "-linkmode external -extldflags -static -X main.Version=$VERSION" .
 
 FROM scratch
 COPY --from=build /app/ssg /ssg

@@ -1,0 +1,23 @@
+---
+cluster: cluster1
+bind: ':8080'
+controlTokens:
+  - 'test-control-token-apqlwoskeij'
+  - 'test-admin-token-ghtyyfjkrudke'
+defaultBucket:
+  compression: zlib
+  encryption: aes256-ctr
+  vault:
+    kind: hashicorp
+    hashicorp:
+      url: http://vault:8200
+      token: ichaeZeeth5ichi1OhxooSahpoo8wa
+      prefix: secret/tests
+
+buckets:
+  - key: files
+    name: Files
+    provider:
+      kind: fs
+      fs:
+        root: /srv/files
