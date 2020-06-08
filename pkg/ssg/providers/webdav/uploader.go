@@ -8,16 +8,30 @@ type Uploader struct {
 	relpath string
 	writer io.WriteCloser
 	done chan int
+	n int64
 }
 
 func (out *Uploader) Write(b []byte) (int, error) {
-	return out.writer.Write(b)
+	n, err := out.writer.Write(b)
+	if err != nil {
+		return n, err
+	}
+	out.n += int64(n)
+	return n, nil
 }
 
 func (out *Uploader) Close() error {
 	err := out.writer.Close()
 	<-out.done
 	return err
+}
+
+func (out *Uploader) SentCompressed() int64 {
+	return out.n
+}
+
+func (out *Uploader) SentUncompressed() int64 {
+	return out.n
 }
 
 func (out *Uploader) Path() string {

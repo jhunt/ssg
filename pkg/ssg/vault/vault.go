@@ -27,6 +27,14 @@ func (e EncryptedUploader) Close() error {
 	return e.wr.Close()
 }
 
+func (e EncryptedUploader) SentCompressed() int64 {
+	return e.inner.SentCompressed()
+}
+
+func (e EncryptedUploader) SentUncompressed() int64 {
+	return e.inner.SentUncompressed()
+}
+
 func (e EncryptedUploader) Path() string {
 	return e.inner.Path()
 }

@@ -7,41 +7,52 @@ import (
 type Uploader struct {
 	key string
 	up *s3.Upload
+	n int64
 
-	n int
+	bufn int
 	buf []byte
 }
 
 func (out *Uploader) Write(b []byte) (int, error) {
-	left := len(out.buf) - out.n
+	left := len(out.buf) - out.bufn
 	nwrit := 0
 	for len(b) >= left {
-		copy(out.buf[out.n:], b[:left])
+		copy(out.buf[out.bufn:], b[:left])
 		b = b[left:]
 
 		if err := out.up.Write(out.buf); err != nil {
 			return nwrit, err
 		}
 
+		out.n += int64(nwrit)
 		nwrit += len(out.buf)
 		left = len(out.buf)
-		out.n = 0
+		out.bufn = 0
 	}
 
-	copy(out.buf[out.n:], b)
-	out.n += len(b)
+	copy(out.buf[out.bufn:], b)
+	out.bufn += len(b)
 	nwrit += len(b)
 
 	return nwrit, nil
 }
 
 func (out *Uploader) Close() error {
-	if out.n > 0 {
-		if err := out.up.Write(out.buf[:out.n]); err != nil {
+	if out.bufn > 0 {
+		if err := out.up.Write(out.buf[:out.bufn]); err != nil {
 			return err
 		}
+		out.n += int64(out.bufn)
 	}
 	return out.up.Done()
+}
+
+func (out *Uploader) SentCompressed() int64 {
+	return out.n
+}
+
+func (out *Uploader) SentUncompressed() int64 {
+	return out.n
 }
 
 func (out *Uploader) Path() string {

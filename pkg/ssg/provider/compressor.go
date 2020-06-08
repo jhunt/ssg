@@ -11,7 +11,7 @@ func Compress(ul Uploader, alg string) (Uploader, error) {
 	case "none", "":
 			return ul, nil
 	case "zlib":
-		return ZlibUploader{
+		return &ZlibUploader{
 			w: zlib.NewWriter(ul),
 			inner: ul,
 		}, nil

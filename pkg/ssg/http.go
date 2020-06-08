@@ -174,13 +174,30 @@ func (s *Server) Router(helo string) *route.Router {
 			return
 		}
 
+		upstream.segments++
+
 		if in.EOF {
 			upstream.writer.Close()
 			s.forget(upstream)
-			r.Success("uploaded %d bytes (and finished)", n) // fixme
+
+			r.OK(struct {
+				Segments     int   `json:"segments"`
+				Compressed   int64 `json:"compressed"`
+				Uncompressed int64 `json:"uncompressed"`
+			}{
+				Segments:     upstream.segments,
+				Compressed:   upstream.writer.SentCompressed(),
+				Uncompressed: upstream.writer.SentUncompressed(),
+			})
 
 		} else {
-			r.Success("uploaded %d bytes", n) // fixme
+			r.OK(struct {
+				Segments int `json:"segments"`
+				Sent     int `json:"sent"`
+			}{
+				Segments: upstream.segments,
+				Sent:     n,
+			})
 		}
 	})
 
