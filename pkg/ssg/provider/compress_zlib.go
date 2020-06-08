@@ -5,7 +5,7 @@ import (
 )
 
 type ZlibUploader struct {
-	w *zlib.Writer
+	w     *zlib.Writer
 	inner Uploader
 	n     int64
 }

@@ -20,13 +20,13 @@ func Parse(s string) (*URL, error) {
 
 		return &URL{
 			Cluster: m[2],
-			Bucket: m[3],
-			Path: strings.Trim(m[4], "/"),
+			Bucket:  m[3],
+			Path:    strings.Trim(m[4], "/"),
 		}, nil
 	}
-	return nil, fmt.Errorf("invalid ssg url")
+	return nil, fmt.Errorf("invalid ssg url '%s'", s)
 }
 
 func (u URL) String() string {
-	return "ssg://"+u.Cluster+"/"+u.Bucket+"/"+strings.Trim(u.Path, "/")
+	return "ssg://" + u.Cluster + "/" + u.Bucket + "/" + strings.Trim(u.Path, "/")
 }

@@ -1,11 +1,11 @@
 package hashicorp
 
 import (
+	"encoding/hex"
 	"fmt"
+	"net/url"
 	"path"
 	"path/filepath"
-	"encoding/hex"
-	"net/url"
 
 	"github.com/cloudfoundry-community/vaultkv"
 	"github.com/jhunt/shield-storage-gateway/pkg/ssg/vault"
@@ -47,9 +47,9 @@ func Configure(e Endpoint) (Vault, error) {
 
 func (v Vault) Set(id string, c vault.Cipher) error {
 	_, err := v.kv.Set(filepath.Join(v.prefix, id), map[string]string{
-		"id": id,
+		"id":  id,
 		"key": hex.EncodeToString(c.Key),
-		"iv": hex.EncodeToString(c.IV),
+		"iv":  hex.EncodeToString(c.IV),
 		"alg": c.Algorithm,
 	}, nil)
 	return err
@@ -57,9 +57,9 @@ func (v Vault) Set(id string, c vault.Cipher) error {
 
 func (v Vault) Get(id string) (vault.Cipher, error) {
 	var in struct {
-		ID string `json:"id"`
+		ID  string `json:"id"`
 		Key string `json:"key"`
-		IV string `json:"iv"`
+		IV  string `json:"iv"`
 		Alg string `json:"alg"`
 	}
 	_, err := v.kv.Get(filepath.Join(v.prefix, id), &in, nil)

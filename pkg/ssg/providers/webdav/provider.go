@@ -1,31 +1,31 @@
 package webdav
 
 import (
-	"strings"
-	"io"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
+	"strings"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
 	"github.com/jhunt/shield-storage-gateway/pkg/rand"
+	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
 )
 
 const RandomFile = ""
 
 type Endpoint struct {
-	URL string
+	URL      string
 	Username string
 	Password string
 }
 
 type Provider struct {
-	base *url.URL
+	base     *url.URL
 	username string
 	password string
-	client *http.Client
+	client   *http.Client
 }
 
 func Configure(e Endpoint) (Provider, error) {
@@ -35,10 +35,10 @@ func Configure(e Endpoint) (Provider, error) {
 	}
 
 	return Provider{
-		base: base,
+		base:     base,
 		username: e.Username,
 		password: e.Password,
-		client: http.DefaultClient,
+		client:   http.DefaultClient,
 	}, nil
 }
 
@@ -75,9 +75,9 @@ func (p Provider) Upload(hint string) (provider.Uploader, error) {
 		done <- 1
 	}()
 	return &Uploader{
-		writer: wr,
+		writer:  wr,
 		relpath: relpath,
-		done: done,
+		done:    done,
 	}, nil
 }
 

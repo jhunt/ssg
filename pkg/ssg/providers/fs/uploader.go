@@ -5,7 +5,7 @@ import (
 )
 
 type Uploader struct {
-	file *os.File
+	file    *os.File
 	relpath string
 	abspath string
 	n       int64

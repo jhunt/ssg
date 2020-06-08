@@ -6,9 +6,9 @@ import (
 
 type Uploader struct {
 	relpath string
-	writer io.WriteCloser
-	done chan int
-	n int64
+	writer  io.WriteCloser
+	done    chan int
+	n       int64
 }
 
 func (out *Uploader) Write(b []byte) (int, error) {

@@ -9,10 +9,10 @@ import (
 func Compress(ul Uploader, alg string) (Uploader, error) {
 	switch alg {
 	case "none", "":
-			return ul, nil
+		return ul, nil
 	case "zlib":
 		return &ZlibUploader{
-			w: zlib.NewWriter(ul),
+			w:     zlib.NewWriter(ul),
 			inner: ul,
 		}, nil
 	default:
@@ -23,7 +23,7 @@ func Compress(ul Uploader, alg string) (Uploader, error) {
 func Decompress(dl Downloader, alg string) (Downloader, error) {
 	switch alg {
 	case "none", "":
-			return dl, nil
+		return dl, nil
 	case "zlib":
 		return zlib.NewReader(dl)
 	default:

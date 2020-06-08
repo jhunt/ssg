@@ -5,17 +5,17 @@ import (
 
 	"github.com/jhunt/go-s3"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
 	"github.com/jhunt/shield-storage-gateway/pkg/rand"
+	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
 )
 
 const RandomKey = ""
 
 type Endpoint struct {
-	Region string
-	Bucket string
-	Prefix string
-	AccessKeyID string
+	Region          string
+	Bucket          string
+	Prefix          string
+	AccessKeyID     string
 	SecretAccessKey string
 }
 
@@ -26,9 +26,9 @@ type Provider struct {
 
 func Configure(e Endpoint) (Provider, error) {
 	client, err := s3.NewClient(&s3.Client{
-		Bucket: e.Bucket,
-		Region: e.Region,
-		AccessKeyID: e.AccessKeyID,
+		Bucket:          e.Bucket,
+		Region:          e.Region,
+		AccessKeyID:     e.AccessKeyID,
 		SecretAccessKey: e.SecretAccessKey,
 	})
 	if err != nil {
@@ -53,10 +53,9 @@ func (p Provider) Upload(hint string) (provider.Uploader, error) {
 	}
 
 	return &Uploader{
-		up: up,
+		up:  up,
 		key: key,
-		n: 0,
-		buf: make([]byte, 5*1024*1024),
+		buf: make([]byte, 5*1024*1024), // FIXME make this configurable
 	}, nil
 }
 

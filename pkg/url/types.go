@@ -1,8 +1,8 @@
 package url
 
 type URL struct {
-	Scheme string
+	Scheme  string
 	Cluster string
-	Bucket string
-	Path string
+	Bucket  string
+	Path    string
 }
