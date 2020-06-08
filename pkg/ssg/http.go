@@ -95,7 +95,7 @@ func (s *Server) Router(helo string) *route.Router {
 		case "download":
 			stream, err := s.startDownload(target)
 			if err != nil {
-				r.Fail(route.Oops(err, "unable to start upload"))
+				r.Fail(route.Oops(err, "unable to start download"))
 				return
 			}
 
