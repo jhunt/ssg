@@ -29,7 +29,7 @@ func (s *Server) startUpload(to *url.URL) (*stream, string, error) {
 	}
 
 	log.Debugf(LOG+"generating random path in bucket '%s'", to.Bucket)
-	uploader, err := bucket.Upload("")
+	uploader, err := bucket.Upload(to.Path)
 	if err != nil {
 		return nil, "", err
 	}
