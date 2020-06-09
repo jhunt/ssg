@@ -41,7 +41,7 @@ func main() {
 
 		Expunge struct {
 			URL   string `cli:"-u, --url"   env:"SSG_URL"`
-			Token string `cli:"-t, --token" env:"SSG_STREAM_TOKEN"`
+			Token string `cli:"-t, --token" env:"SSG_CONTROL_TOKEN"`
 		} `cli:"expunge, delete, rm"`
 
 		Get struct {

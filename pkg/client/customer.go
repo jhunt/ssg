@@ -57,10 +57,12 @@ func (c *Customer) send(id, token string, data []byte, eof bool) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer res.Body.Close()
 
-	// FIXME - check status codes and payload
+	if res.StatusCode != 200 {
+		return 0, errorFrom(res)
+	}
 
-	res.Body.Close()
 	return len(data), nil
 }
 
@@ -103,5 +105,10 @@ func (c *Customer) Download(id, token string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if res.StatusCode != 200 {
+		return nil, errorFrom(res)
+	}
+
 	return res.Body, err
 }
