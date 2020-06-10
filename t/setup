@@ -12,11 +12,20 @@ fi
 echo "» (re)starting INTEGRATION TEST docker compose infrastructure…"
 docker-compose -p ssg_integration_tests -f t/docker-compose.yml down -v
 docker-compose -p ssg_integration_tests -f t/docker-compose.yml up -d
-echo "» waiting for http://127.0.0.1:$PUBLIC_PORT/ to come online…"
+echo "» waiting for vault to come online…"
 n=300
 while [[ $n != 0 ]]; do
-  if curl --connect-timeout 1 -sf http://127.0.0.1:$PUBLIC_PORT/ >/dev/null; then
-    exit 0
+  if docker exec -e VAULT_ADDR=http://127.0.0.1:8200 secp_integration_tests_vault_1 vault status >/dev/null 2>&1; then
+    echo "» waiting for http://127.0.0.1:$PUBLIC_PORT/ to come online…"
+    n=300
+    while [[ $n != 0 ]]; do
+      if curl --connect-timeout 1 -sf http://127.0.0.1:$PUBLIC_PORT/ >/dev/null; then
+        exit 0
+      fi
+      sleep 0.1
+      n=$((n - 1))
+    done
+    exit 1
   fi
   sleep 0.1
   n=$((n - 1))
