@@ -28,6 +28,7 @@ buckets:
 
   - key: minio
     name: Minio (S3)
+    description: An S3-workalike that puts files in the root of a bucket
     provider:
       kind: s3
       s3:
@@ -39,7 +40,7 @@ buckets:
         secretAccessKey: NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
 
   - key: minio-with-prefix
-    name: Minio (S3)
+    name: Minio (S3 /prefix)
     provider:
       kind: s3
       s3:

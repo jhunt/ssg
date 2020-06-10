@@ -97,7 +97,53 @@ system('t/setup');
 is $?, 0, 't/setup should exit zero (success)'
   or do { done_testing; exit; };
 
-for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
+as_agent;
+GET '/buckets';
+ok !$SUCCESS, "attempting to list buckets as the agent should fail"
+	or diag $res->as_string;
+
+as_monitor;
+GET '/buckets';
+ok !$SUCCESS, "attempting to list buckets as the monitor should fail"
+	or diag $res->as_string;
+
+as_control;
+GET '/buckets';
+ok $SUCCESS, "attempting to list buckets as the control user should succeed"
+	or diag $res->as_string;
+cmp_deeply($RESPONSE, [
+	{
+		key => 'files',
+		name => 'Files',
+		description => '',
+		compression => 'zlib',
+		encryption => 'aes256-ctr',
+	},
+	{
+		key => 'minio',
+		name => 'Minio (S3)',
+		description => 'An S3-workalike that puts files in the root of a bucket',
+		compression => 'zlib',
+		encryption => 'aes256-ctr',
+	},
+	{
+		key => 'minio-with-prefix',
+		name => 'Minio (S3 /prefix)',
+		description => '',
+		compression => 'zlib',
+		encryption => 'aes256-ctr',
+	},
+	{
+		key => 'webdav',
+		name => 'WebDAV',
+		description => '',
+		compression => 'zlib',
+		encryption => 'aes256-ctr',
+	},
+], "/buckets should list only pertinent bucket info, in defined order");
+
+my @buckets = map { $_->{key} } @$RESPONSE;
+for my $BUCKET (@buckets) {
 	subtest "$BUCKET bucket" => sub {
 		as_agent;
 		POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
