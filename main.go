@@ -318,7 +318,7 @@ func main() {
 		}
 
 		cu := client.Customer{
-			URL: opts.Stream.URL,
+			URL: cc.URL,
 		}
 		fmt.Fprintf(os.Stderr, "uploading to @C{%s}\n", stream.Canon)
 		n, err := cu.Upload(stream.ID, stream.Token, os.Stdin, true)
