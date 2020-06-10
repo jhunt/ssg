@@ -210,6 +210,9 @@ func NewServer(c config.Config) (*Server, error) {
 			if b.Provider.S3.UsePath {
 				attrs = append(attrs, "path-based")
 			}
+			if b.Provider.S3.PartSize != 0 {
+				attrs = append(attrs, fmt.Sprintf("part-size=%d", b.Provider.S3.PartSize))
+			}
 			log.Infof(LOG+"configuring bucket %v backed by s3 (%s)", b.Key, strings.Join(attrs, ", "))
 			candidate, err := s3.Configure(s3.Endpoint{
 				URL:             b.Provider.S3.URL,
@@ -217,6 +220,7 @@ func NewServer(c config.Config) (*Server, error) {
 				Region:          b.Provider.S3.Region,
 				Bucket:          b.Provider.S3.Bucket,
 				UsePath:         b.Provider.S3.UsePath,
+				PartSize:        b.Provider.S3.PartSize,
 				AccessKeyID:     b.Provider.S3.AccessKeyID,
 				SecretAccessKey: b.Provider.S3.SecretAccessKey,
 			})

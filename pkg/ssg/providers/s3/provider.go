@@ -11,7 +11,10 @@ import (
 	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
 )
 
-const RandomKey = ""
+const (
+	RandomKey       = ""
+	DefaultPartSize = 5
+)
 
 type Endpoint struct {
 	URL             string
@@ -19,13 +22,15 @@ type Endpoint struct {
 	Bucket          string
 	Prefix          string
 	UsePath         bool
+	PartSize        int
 	AccessKeyID     string
 	SecretAccessKey string
 }
 
 type Provider struct {
-	prefix string
-	client *s3.Client
+	prefix   string
+	client   *s3.Client
+	partsize int
 }
 
 func Configure(e Endpoint) (Provider, error) {
@@ -56,9 +61,14 @@ func Configure(e Endpoint) (Provider, error) {
 		return Provider{}, err
 	}
 
+	if e.PartSize == 0 {
+		e.PartSize = DefaultPartSize
+	}
+
 	return Provider{
-		prefix: e.Prefix,
-		client: client,
+		prefix:   e.Prefix,
+		client:   client,
+		partsize: e.PartSize,
 	}, nil
 }
 
@@ -76,7 +86,7 @@ func (p Provider) Upload(hint string) (provider.Uploader, error) {
 	return &Uploader{
 		up:  up,
 		key: key,
-		buf: make([]byte, 5*1024*1024), // FIXME make this configurable
+		buf: make([]byte, p.partsize*1024*1024),
 	}, nil
 }
 

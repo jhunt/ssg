@@ -36,7 +36,15 @@ type S3 struct {
 	// communicating with the backend.  Official S3 uses
 	// DNS-based bucket addressing, but most work-alikes
 	// do not.
+	//
 	UsePath bool `yaml:"usePath"`
+
+	// PartSize sets the size of the pieces to send to the
+	// S3 API server, in MiB (1024 * 1024 bytes).
+	// Amazon AWS requires this to be at // least 5MiB,
+	// but allows it to be larger.
+	//
+	PartSize int `json:"partSize"`
 
 	// AccessKeyID contains the Access Key ID to use for
 	// authenticating to the S3 API.
