@@ -120,7 +120,7 @@ buckets:
 `))
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(c.Cluster).Should(Equal("test"))
-			Ω(c.Bind).Should(Equal("*:8080")) // default
+			Ω(c.Bind).Should(Equal(":8080")) // default
 			Ω(c.ControlTokens).Should(Equal([]string{"foo"}))
 
 			Ω(c.DefaultBucket.Compression).Should(Equal("none")) // default
