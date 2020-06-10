@@ -50,7 +50,7 @@ sub GET {
   $url =~ s|^/||;
 
   $req = HTTP::Request->new(GET => "$BASE_URL/$url")
-  	or die "failed to make [GET /$url] request: $!\n";
+    or die "failed to make [GET /$url] request: $!\n";
   $req->header('Authorization' => "Bearer $AUTH") if  $AUTH;
   $req->header('X-SSG-Token' => $TOKEN)           if !$AUTH && $TOKEN;
   $req->header('Accept' => 'application/json');
@@ -66,7 +66,7 @@ sub POST {
   $url =~ s|^/||;
 
   $req = HTTP::Request->new(POST => "$BASE_URL/$url")
-  	or die "failed to make [POST /$url] request: $!\n";
+    or die "failed to make [POST /$url] request: $!\n";
   $req->header('Authorization' => "Bearer $AUTH") if  $AUTH;
   $req->header('X-SSG-Token' => $TOKEN)           if !$AUTH && $TOKEN;
   $req->header('Accept'       => 'application/json');
