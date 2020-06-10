@@ -41,6 +41,7 @@ func (s *Server) startUpload(to *url.URL) (*stream, string, error) {
 		canon:  to.String(),
 		reader: nil,
 		writer: uploader,
+		bucket: bucket,
 	}
 	upstream.lease(s.MaxLease)
 	log.Debugf(LOG+"stream %v -> %v will be valid until %v", upstream.id, upstream.canon, upstream.expires)
@@ -48,6 +49,7 @@ func (s *Server) startUpload(to *url.URL) (*stream, string, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.uploads[upstream.id] = upstream
+	bucket.metrics.StartUpload()
 	return upstream, uploader.Path(), nil
 }
 
@@ -83,6 +85,7 @@ func (s *Server) startDownload(from *url.URL) (*stream, error) {
 		canon:  from.String(),
 		reader: downloader,
 		writer: nil,
+		bucket: bucket,
 	}
 	downstream.lease(s.MaxLease)
 	log.Debugf(LOG+"stream %v <- %v will be valid until %v", downstream.id, downstream.canon, downstream.expires)
@@ -90,6 +93,7 @@ func (s *Server) startDownload(from *url.URL) (*stream, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.downloads[downstream.id] = downstream
+	bucket.metrics.StartDownload()
 	return downstream, nil
 }
 
@@ -130,6 +134,7 @@ func (s *Server) expunge(where *url.URL) error {
 	}
 
 	log.Infof(LOG+"expunging %v", where)
+	bucket.metrics.Expunge()
 	return bucket.Expunge(where.Path)
 }
 
@@ -163,6 +168,9 @@ func NewServer(c config.Config) (*Server, error) {
 
 	s.Bind = c.Bind
 	log.Infof(LOG+"set bind address to %v", s.Bind)
+
+	s.ReservoirSize = c.Metrics.ReservoirSize
+	log.Infof(LOG+"set metrics sampling reservoir size to %v", s.ReservoirSize)
 
 	s.ControlTokens = make([]string, len(c.ControlTokens))
 	copy(s.ControlTokens, c.ControlTokens)
@@ -260,6 +268,7 @@ func NewServer(c config.Config) (*Server, error) {
 			encryption:  b.Encryption,
 			provider:    p,
 			vault:       v,
+			metrics:     newMetric(s.ReservoirSize),
 		}
 	}
 	log.Infof(LOG+"configured %d buckets", len(s.buckets))

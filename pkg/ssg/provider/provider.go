@@ -13,8 +13,8 @@ type Provider interface {
 type Uploader interface {
 	io.Writer
 	io.Closer
-	SentUncompressed() int64
-	SentCompressed() int64
+	WroteUncompressed() int64
+	WroteCompressed() int64
 	Path() string
 	Cancel() error
 }
@@ -22,4 +22,6 @@ type Uploader interface {
 type Downloader interface {
 	io.Reader
 	io.Closer
+	ReadUncompressed() int64
+	ReadCompressed() int64
 }

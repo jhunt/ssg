@@ -143,8 +143,8 @@ func (s *Server) Router(helo string) *route.Router {
 		}
 
 		r.Header().Set("Content-Type", "application/octet-stream")
-		r.Stream(downstream.reader)
-		downstream.reader.Close()
+		r.Stream(downstream)
+		downstream.Close()
 		s.forget(downstream)
 	})
 
@@ -164,45 +164,39 @@ func (s *Server) Router(helo string) *route.Router {
 			return
 		}
 
-		b, err := base64.StdEncoding.DecodeString(in.Data)
-		if err != nil {
-			r.Fail(route.Bad(err, "unable to decode base64 payload"))
-			return
-		}
+		n := 0
+		if in.Data != "" {
+			b, err := base64.StdEncoding.DecodeString(in.Data)
+			if err != nil {
+				r.Fail(route.Bad(err, "unable to decode base64 payload"))
+				return
+			}
 
-		log.Debugf(LOG+"uploading %d bytes (eof: %v) to stream %v", len(b), in.EOF, upstream.id)
-		n, err := upstream.writer.Write(b)
-		if err != nil {
-			r.Fail(route.Oops(err, "unable to upload data to stream"))
-			return
+			log.Debugf(LOG+"uploading %d bytes (eof: %v) to stream %v", len(b), in.EOF, upstream.id)
+			n, err = upstream.Write(b)
+			if err != nil {
+				r.Fail(route.Oops(err, "unable to upload data to stream"))
+				return
+			}
 		}
-
-		upstream.segments++
 
 		if in.EOF {
 			log.Debugf(LOG+"EOF signaled by client; closing upload stream %v", upstream.id)
-			upstream.writer.Close()
+			upstream.Close()
 			s.forget(upstream)
-
-			r.OK(struct {
-				Segments     int   `json:"segments"`
-				Compressed   int64 `json:"compressed"`
-				Uncompressed int64 `json:"uncompressed"`
-			}{
-				Segments:     upstream.segments,
-				Compressed:   upstream.writer.SentCompressed(),
-				Uncompressed: upstream.writer.SentUncompressed(),
-			})
-
-		} else {
-			r.OK(struct {
-				Segments int `json:"segments"`
-				Sent     int `json:"sent"`
-			}{
-				Segments: upstream.segments,
-				Sent:     n,
-			})
 		}
+
+		r.OK(struct {
+			Segments     int   `json:"segments"`
+			Compressed   int64 `json:"compressed"`
+			Uncompressed int64 `json:"uncompressed"`
+			Sent         int   `json:"sent",omitempty`
+		}{
+			Segments:     upstream.segments,
+			Compressed:   upstream.compressed.total(),
+			Uncompressed: upstream.uncompressed.total(),
+			Sent:         n,
+		})
 	})
 
 	r.Dispatch("GET /streams", func(r *route.Request) {
@@ -215,7 +209,7 @@ func (s *Server) Router(helo string) *route.Router {
 			ID       string    `json:"id"`
 			Canon    string    `json:"canon"`
 			Expires  time.Time `json:"expires"`
-			Received int       `json:"received"`
+			Received int64     `json:"received"`
 		}
 
 		s.lock.Lock()
@@ -227,7 +221,7 @@ func (s *Server) Router(helo string) *route.Router {
 				ID:       v.id,
 				Canon:    v.canon,
 				Expires:  v.expires,
-				Received: 0, // FIXME
+				Received: v.uncompressed.total(),
 			})
 		}
 		for id, v := range s.downloads {
@@ -236,7 +230,7 @@ func (s *Server) Router(helo string) *route.Router {
 				ID:       id,
 				Canon:    v.canon,
 				Expires:  v.expires,
-				Received: 0, // FIXME
+				Received: v.uncompressed.total(),
 			})
 		}
 		r.OK(l)
@@ -252,12 +246,26 @@ func (s *Server) Router(helo string) *route.Router {
 		if !authz(r, s.MonitorTokens) {
 			return
 		}
+
+		m := make(map[string]metrics)
+		for _, b := range s.buckets {
+			b.metrics.Recalculate()
+			m[b.key] = b.metrics
+		}
+		r.OK(m)
 	})
 
 	r.Dispatch("DELETE /metrics", func(r *route.Request) {
 		if !authz(r, s.MonitorTokens) {
 			return
 		}
+
+		m := make(map[string]metrics)
+		for _, b := range s.buckets {
+			b.metrics.Reset()
+			m[b.key] = b.metrics
+		}
+		r.OK(m)
 	})
 
 	return r

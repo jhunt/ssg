@@ -27,12 +27,12 @@ func (e EncryptedUploader) Close() error {
 	return e.wr.Close()
 }
 
-func (e EncryptedUploader) SentCompressed() int64 {
-	return e.inner.SentCompressed()
+func (e EncryptedUploader) WroteCompressed() int64 {
+	return e.inner.WroteCompressed()
 }
 
-func (e EncryptedUploader) SentUncompressed() int64 {
-	return e.inner.SentUncompressed()
+func (e EncryptedUploader) WroteUncompressed() int64 {
+	return e.inner.WroteUncompressed()
 }
 
 func (e EncryptedUploader) Path() string {
@@ -82,6 +82,14 @@ func (d DecryptedDownloader) Read(b []byte) (int, error) {
 
 func (d DecryptedDownloader) Close() error {
 	return d.inner.Close()
+}
+
+func (d DecryptedDownloader) ReadCompressed() int64 {
+	return d.inner.ReadCompressed()
+}
+
+func (d DecryptedDownloader) ReadUncompressed() int64 {
+	return d.inner.ReadUncompressed()
 }
 
 func Decrypt(v Vault, id string, down provider.Downloader) (provider.Downloader, error) {

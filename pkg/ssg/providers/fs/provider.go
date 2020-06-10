@@ -80,7 +80,7 @@ func (f Provider) Download(relpath string) (provider.Downloader, error) {
 		return nil, fmt.Errorf("%s: not a regular file", relpath)
 	}
 
-	return file, nil
+	return provider.MeteredDownload(file)
 }
 
 func (f Provider) Expunge(relpath string) error {

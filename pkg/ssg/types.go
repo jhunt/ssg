@@ -20,6 +20,10 @@ type stream struct {
 	segments int
 	writer   provider.Uploader
 	reader   provider.Downloader
+	bucket   *bucket
+
+	compressed   delta
+	uncompressed delta
 }
 
 type bucket struct {
@@ -32,6 +36,7 @@ type bucket struct {
 
 	provider provider.Provider
 	vault    vault.Vault
+	metrics  metrics
 }
 
 type Server struct {
@@ -41,6 +46,7 @@ type Server struct {
 	MonitorTokens []string
 	MaxLease      time.Duration
 	SweepInterval time.Duration
+	ReservoirSize int
 
 	lock      sync.Mutex
 	buckets   []*bucket

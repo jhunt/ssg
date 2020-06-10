@@ -24,11 +24,11 @@ func (out *Uploader) Close() error {
 	return out.file.Close()
 }
 
-func (out *Uploader) SentCompressed() int64 {
+func (out *Uploader) WroteCompressed() int64 {
 	return out.n
 }
 
-func (out *Uploader) SentUncompressed() int64 {
+func (out *Uploader) WroteUncompressed() int64 {
 	return out.n
 }
 
