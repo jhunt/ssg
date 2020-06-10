@@ -1,6 +1,7 @@
 package meter_test
 
 import (
+	"io/ioutil"
 	"bytes"
 
 	. "github.com/onsi/ginkgo"
@@ -21,7 +22,7 @@ var _ = Describe("meter", func() {
 
 		BeforeEach(func() {
 			b := []byte("this is a test string")
-			m = meter.NewReader(bytes.NewBuffer(b))
+			m = meter.NewReader(ioutil.NopCloser(bytes.NewBuffer(b)))
 		})
 
 		It("should have read 0 bytes initially", func() {
