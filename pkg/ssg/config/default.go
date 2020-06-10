@@ -8,5 +8,5 @@ func init() {
 	Default.SweepInterval = 1
 	Default.Metrics.ReservoirSize = 100
 	Default.DefaultBucket.Compression = "none"
-	Default.DefaultBucket.Encryption = "none"
+	Default.DefaultBucket.Encryption = "aes256-ctr"
 }
