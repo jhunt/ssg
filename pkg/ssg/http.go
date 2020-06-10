@@ -18,6 +18,31 @@ func (s *Server) Router(helo string) *route.Router {
 		r.Success(helo)
 	})
 
+	r.Dispatch("GET /buckets", func(r *route.Request) {
+		if !authz(r, s.ControlTokens) {
+			return
+		}
+
+		type Bucket struct {
+			Key         string `json:"key"`
+			Name        string `json:"name"`
+			Description string `json:"description"`
+			Compression string `json:"compression"`
+			Encryption  string `json:"encryption"`
+		}
+
+		l := make([]Bucket, len(s.buckets))
+		for i, b := range s.buckets {
+			l[i].Key = b.key
+			l[i].Name = b.name
+			l[i].Description = b.description
+			l[i].Compression = b.compression
+			l[i].Encryption = b.encryption
+		}
+
+		r.OK(l)
+	})
+
 	r.Dispatch("POST /control", func(r *route.Request) {
 		if !authz(r, s.ControlTokens) {
 			return
