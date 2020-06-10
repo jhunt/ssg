@@ -29,30 +29,32 @@ func main() {
 			Config string `cli:"-c, --config" env:"SSG_CONFIG"`
 		} `cli:"server"`
 
+		Control struct {
+			URL   string `cli:"-u, --url"   env:"SSG_URL"`
+			Token string `cli:"-t, --token" env:"SSG_CONTROL_TOKEN"`
+
+			Upload   struct{} `cli:"upload"`
+			Download struct{} `cli:"download"`
+			Expunge  struct{} `cli:"expunge, delete, rm"`
+		} `cli:"control, c"`
+
+		Stream struct {
+			URL   string `cli:"-u, --url"   env:"SSG_URL"`
+			Token string `cli:"-t, --token" env:"SSG_STREAM_TOKEN"`
+
+			Get struct{} `cli:"get"`
+			Put struct{} `cli:"put"`
+		} `cli:"stream, s"`
+
 		Upload struct {
 			URL   string `cli:"-u, --url"   env:"SSG_URL"`
 			Token string `cli:"-t, --token" env:"SSG_CONTROL_TOKEN"`
-		} `cli:"upload"`
+		} `cli:"upload, up"`
 
 		Download struct {
 			URL   string `cli:"-u, --url"   env:"SSG_URL"`
 			Token string `cli:"-t, --token" env:"SSG_CONTROL_TOKEN"`
-		} `cli:"download"`
-
-		Expunge struct {
-			URL   string `cli:"-u, --url"   env:"SSG_URL"`
-			Token string `cli:"-t, --token" env:"SSG_CONTROL_TOKEN"`
-		} `cli:"expunge, delete, rm"`
-
-		Get struct {
-			URL   string `cli:"-u, --url"   env:"SSG_URL"`
-			Token string `cli:"-t, --token" env:"SSG_STREAM_TOKEN"`
-		} `cli:"get"`
-
-		Put struct {
-			URL   string `cli:"-u, --url"   env:"SSG_URL"`
-			Token string `cli:"-t, --token" env:"SSG_STREAM_TOKEN"`
-		} `cli:"put"`
+		} `cli:"download, down"`
 	}
 
 	opts.Server.Log = "info"
@@ -120,6 +122,172 @@ func main() {
 		os.Exit(0)
 	}
 
+	if command == "control upload" {
+		if opts.Control.Token == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--token}\n")
+			os.Exit(2)
+		}
+		if opts.Control.URL == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--url}\n")
+			os.Exit(1)
+		}
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "!! missing required REMOTE-PATH argument\n")
+			os.Exit(1)
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(os.Stderr, "!! extra arguments found\n")
+			os.Exit(1)
+		}
+
+		c := client.Controller{
+			URL:   opts.Control.URL,
+			Token: opts.Control.Token,
+		}
+
+		stream, err := c.NewUpload(args[0])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! @W{/control} failed: @R{%s}\n", err)
+			os.Exit(2)
+		}
+
+		b, err := json.MarshalIndent(stream, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! failed to json: @R{%s}\n", err)
+			os.Exit(3)
+		}
+		fmt.Printf("%s\n", string(b))
+		os.Exit(0)
+	}
+
+	if command == "control download" {
+		if opts.Control.Token == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--token}\n")
+			os.Exit(1)
+		}
+		if opts.Control.URL == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--url}\n")
+			os.Exit(1)
+		}
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "!! missing required REMOTE-PATH argument\n")
+			os.Exit(1)
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(os.Stderr, "!! extra arguments found\n")
+			os.Exit(1)
+		}
+
+		c := client.Controller{
+			URL:   opts.Control.URL,
+			Token: opts.Control.Token,
+		}
+
+		stream, err := c.NewDownload(args[0])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! @W{/control} failed: @R{%s}\n", err)
+			os.Exit(2)
+		}
+
+		b, err := json.MarshalIndent(stream, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! failed to json: @R{%s}\n", err)
+			os.Exit(3)
+		}
+		fmt.Printf("%s\n", string(b))
+		os.Exit(0)
+	}
+
+	if command == "control expunge" {
+		if opts.Control.Token == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--token}\n")
+			os.Exit(1)
+		}
+		if opts.Control.URL == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--url}\n")
+			os.Exit(1)
+		}
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "!! missing required REMOTE-PATH argument\n")
+			os.Exit(1)
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(os.Stderr, "!! extra arguments found\n")
+			os.Exit(1)
+		}
+
+		c := client.Controller{
+			URL:   opts.Control.URL,
+			Token: opts.Control.Token,
+		}
+
+		err := c.Expunge(args[0])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! @W{/control} failed: @R{%s}\n", err)
+			os.Exit(2)
+		}
+		os.Exit(0)
+	}
+
+	if command == "stream get" {
+		if opts.Stream.Token == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--token}\n")
+			os.Exit(1)
+		}
+		if opts.Stream.URL == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--url}\n")
+			os.Exit(1)
+		}
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "!! missing required STREAM-ID argument\n")
+			os.Exit(1)
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(os.Stderr, "!! extra arguments found\n")
+			os.Exit(1)
+		}
+
+		c := client.Customer{
+			URL: opts.Stream.URL,
+		}
+		rd, err := c.Download(args[0], opts.Stream.Token)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! @R{%s}\n", err)
+		}
+		io.Copy(os.Stdout, rd)
+		rd.Close()
+		os.Exit(0)
+	}
+
+	if command == "stream put" {
+		if opts.Stream.Token == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--token}\n")
+			os.Exit(1)
+		}
+		if opts.Stream.URL == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--url}\n")
+			os.Exit(1)
+		}
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "!! missing required STREAM-PATH argument\n")
+			os.Exit(1)
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(os.Stderr, "!! extra arguments found\n")
+			os.Exit(1)
+		}
+
+		c := client.Customer{
+			URL: opts.Stream.URL,
+		}
+		n, err := c.Upload(args[0], opts.Stream.Token, os.Stdin, true)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! @R{%s}\n", err)
+		}
+		fmt.Fprintf(os.Stderr, "uploaded %d bytes\n", n)
+		os.Exit(0)
+	}
+
 	if command == "upload" {
 		if opts.Upload.Token == "" {
 			fmt.Fprintf(os.Stderr, "!! missing required @Y{--token}\n")
@@ -138,23 +306,26 @@ func main() {
 			os.Exit(1)
 		}
 
-		c := client.Controller{
+		cc := client.Controller{
 			URL:   opts.Upload.URL,
 			Token: opts.Upload.Token,
 		}
 
-		stream, err := c.NewUpload(args[0])
+		stream, err := cc.NewUpload(args[0])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "!! @W{/control} failed: @R{%s}\n", err)
 			os.Exit(2)
 		}
 
-		b, err := json.MarshalIndent(stream, "", "  ")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "!! failed to json: @R{%s}\n", err)
-			os.Exit(3)
+		cu := client.Customer{
+			URL: opts.Stream.URL,
 		}
-		fmt.Printf("%s\n", string(b))
+		fmt.Fprintf(os.Stderr, "uploading to @C{%s}\n", stream.Canon)
+		n, err := cu.Upload(stream.ID, stream.Token, os.Stdin, true)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! @R{%s}\n", err)
+		}
+		fmt.Fprintf(os.Stderr, "uploaded %d bytes\n", n)
 		os.Exit(0)
 	}
 
@@ -176,79 +347,21 @@ func main() {
 			os.Exit(1)
 		}
 
-		c := client.Controller{
+		cc := client.Controller{
 			URL:   opts.Download.URL,
 			Token: opts.Download.Token,
 		}
 
-		stream, err := c.NewDownload(args[0])
+		stream, err := cc.NewDownload(args[0])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "!! @W{/control} failed: @R{%s}\n", err)
 			os.Exit(2)
 		}
 
-		b, err := json.MarshalIndent(stream, "", "  ")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "!! failed to json: @R{%s}\n", err)
-			os.Exit(3)
+		cu := client.Customer{
+			URL: cc.URL,
 		}
-		fmt.Printf("%s\n", string(b))
-		os.Exit(0)
-	}
-
-	if command == "expunge" {
-		if opts.Expunge.Token == "" {
-			fmt.Fprintf(os.Stderr, "!! missing required @Y{--token}\n")
-			os.Exit(1)
-		}
-		if opts.Expunge.URL == "" {
-			fmt.Fprintf(os.Stderr, "!! missing required @Y{--url}\n")
-			os.Exit(1)
-		}
-		if len(args) < 1 {
-			fmt.Fprintf(os.Stderr, "!! missing required REMOTE-PATH argument\n")
-			os.Exit(1)
-		}
-		if len(args) > 1 {
-			fmt.Fprintf(os.Stderr, "!! extra arguments found\n")
-			os.Exit(1)
-		}
-
-		c := client.Controller{
-			URL:   opts.Expunge.URL,
-			Token: opts.Expunge.Token,
-		}
-
-		err := c.Expunge(args[0])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "!! @W{/control} failed: @R{%s}\n", err)
-			os.Exit(2)
-		}
-		os.Exit(0)
-	}
-
-	if command == "get" {
-		if opts.Get.Token == "" {
-			fmt.Fprintf(os.Stderr, "!! missing required @Y{--token}\n")
-			os.Exit(1)
-		}
-		if opts.Get.URL == "" {
-			fmt.Fprintf(os.Stderr, "!! missing required @Y{--url}\n")
-			os.Exit(1)
-		}
-		if len(args) < 1 {
-			fmt.Fprintf(os.Stderr, "!! missing required STREAM-ID argument\n")
-			os.Exit(1)
-		}
-		if len(args) > 1 {
-			fmt.Fprintf(os.Stderr, "!! extra arguments found\n")
-			os.Exit(1)
-		}
-
-		c := client.Customer{
-			URL: opts.Get.URL,
-		}
-		rd, err := c.Download(args[0], opts.Get.Token)
+		rd, err := cu.Download(stream.ID, stream.Token)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "!! @R{%s}\n", err)
 		}
@@ -257,32 +370,4 @@ func main() {
 		os.Exit(0)
 	}
 
-	if command == "put" {
-		if opts.Put.Token == "" {
-			fmt.Fprintf(os.Stderr, "!! missing required @Y{--token}\n")
-			os.Exit(1)
-		}
-		if opts.Put.URL == "" {
-			fmt.Fprintf(os.Stderr, "!! missing required @Y{--url}\n")
-			os.Exit(1)
-		}
-		if len(args) < 1 {
-			fmt.Fprintf(os.Stderr, "!! missing required STREAM-PATH argument\n")
-			os.Exit(1)
-		}
-		if len(args) > 1 {
-			fmt.Fprintf(os.Stderr, "!! extra arguments found\n")
-			os.Exit(1)
-		}
-
-		c := client.Customer{
-			URL: opts.Get.URL,
-		}
-		n, err := c.Upload(args[0], opts.Put.Token, os.Stdin, true)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "!! @R{%s}\n", err)
-		}
-		fmt.Fprintf(os.Stderr, "uploaded %d bytes\n", n)
-		os.Exit(0)
-	}
 }
