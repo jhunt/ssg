@@ -40,7 +40,6 @@ type Config struct {
 		// Defaults to a reasonable value of 100.
 		//
 		ReservoirSize int `yaml:"reservoirSize"`
-
 	} `yaml:"metrics"`
 
 	// ControlTokens is a list of all control bearer

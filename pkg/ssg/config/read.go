@@ -76,7 +76,7 @@ func (c Config) Resolve() (Config, error) {
 		if bucket.Encryption == "" {
 			bucket.Encryption = c.DefaultBucket.Encryption
 		}
-		if bucket.Vault == nil {
+		if bucket.Vault == nil && bucket.Encryption != "none" {
 			bucket.Vault = c.DefaultBucket.Vault
 		}
 
@@ -92,6 +92,9 @@ func (c Config) Resolve() (Config, error) {
 		}
 		if bucket.Vault == nil && bucket.Encryption != "none" {
 			return c, fmt.Errorf("no vault configuration provided for encrypted bucket '%s'", bucket.Key)
+		}
+		if bucket.Vault != nil && bucket.Encryption == "none" {
+			return c, fmt.Errorf("unused vault configuration detected; you have encrpytion %v, and don't need a vault for bucket '%s'", bucket.Encryption, bucket.Key)
 		}
 		if bucket.Vault != nil {
 			if err := bucket.Vault.validate(); err != nil {
