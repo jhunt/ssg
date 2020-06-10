@@ -16,8 +16,8 @@ bind: 127.0.0.1:8081
 controlTokens:
   - foo
 defaultBucket:
-  compression: none
-  encryption:  none
+  compression: zlib
+  encryption:  aes256-ctr
   vault:
     kind: hashicorp
     hashicorp:
@@ -32,7 +32,7 @@ buckets:
       Our standard Cloud Storage, hosted in S3.
 
     compression: none
-    encryption:  none
+    encryption:  aes192-cfb
     vault:
       kind: hashicorp
       hashicorp:
@@ -55,8 +55,8 @@ buckets:
 			Ω(c.Bind).Should(Equal("127.0.0.1:8081"))
 			Ω(c.ControlTokens).Should(Equal([]string{"foo"}))
 
-			Ω(c.DefaultBucket.Compression).Should(Equal("none"))
-			Ω(c.DefaultBucket.Encryption).Should(Equal("none"))
+			Ω(c.DefaultBucket.Compression).Should(Equal("zlib"))
+			Ω(c.DefaultBucket.Encryption).Should(Equal("aes256-ctr"))
 
 			Ω(c.DefaultBucket.Vault).ShouldNot(BeNil())
 			Ω(c.DefaultBucket.Vault.Kind).Should(Equal("hashicorp"))
@@ -71,7 +71,7 @@ buckets:
 			Ω(c.Buckets[0].Name).Should(Equal("Standard Cloud Storage"))
 			Ω(c.Buckets[0].Description).Should(Equal("Our standard Cloud Storage, hosted in S3."))
 			Ω(c.Buckets[0].Compression).Should(Equal("none"))
-			Ω(c.Buckets[0].Encryption).Should(Equal("none"))
+			Ω(c.Buckets[0].Encryption).Should(Equal("aes192-cfb"))
 			Ω(c.Buckets[0].Vault).ShouldNot(BeNil())
 			Ω(c.Buckets[0].Vault.Kind).Should(Equal("hashicorp"))
 			Ω(c.Buckets[0].Vault.Hashicorp.URL).Should(Equal("https://127.0.0.1:8200"))
@@ -124,7 +124,7 @@ buckets:
 			Ω(c.ControlTokens).Should(Equal([]string{"foo"}))
 
 			Ω(c.DefaultBucket.Compression).Should(Equal("none")) // default
-			Ω(c.DefaultBucket.Encryption).Should(Equal("none"))  // default
+			Ω(c.DefaultBucket.Encryption).Should(Equal("aes256-ctr"))  // default
 
 			Ω(c.DefaultBucket.Vault).ShouldNot(BeNil())
 			Ω(c.DefaultBucket.Vault.Kind).Should(Equal("hashicorp"))
@@ -138,8 +138,8 @@ buckets:
 			Ω(c.Buckets[0].Key).Should(Equal("store"))
 			Ω(c.Buckets[0].Name).Should(Equal("store")) // inferred
 			Ω(c.Buckets[0].Description).Should(Equal(""))
-			Ω(c.Buckets[0].Compression).Should(Equal("none"))
-			Ω(c.Buckets[0].Encryption).Should(Equal("none"))
+			Ω(c.Buckets[0].Compression).Should(Equal("none")) // default
+			Ω(c.Buckets[0].Encryption).Should(Equal("aes256-ctr")) // default
 			Ω(c.Buckets[0].Vault).ShouldNot(BeNil())
 			Ω(c.Buckets[0].Vault.Kind).Should(Equal("hashicorp"))
 			Ω(c.Buckets[0].Vault.Hashicorp.URL).Should(Equal("https://127.0.0.1:8200"))

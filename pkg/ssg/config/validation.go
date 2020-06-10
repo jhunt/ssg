@@ -20,6 +20,7 @@ func validEncryption(alg string) bool {
 	switch alg {
 	case "none",
 		"aes128-ctr", "aes128-cfb", "aes128-ofb",
+		"aes192-ctr", "aes192-cfb", "aes192-ofb",
 		"aes256-ctr", "aes256-cfb", "aes256-ofb":
 		return true
 	}
