@@ -28,6 +28,21 @@ type Config struct {
 	//
 	SweepInterval int `yaml:"sweepInterval"`
 
+	// Metrics contains settings related to metrics,
+	// monitoring, and measurements.
+	Metrics struct {
+		// ReservoirSize sets the number of samples
+		// used for sampling segment bytes to get
+		// the median.  This imposes an fixed upper
+		// limit on the memory usage of the monitoring
+		// engine, without losing useful measurements.
+		//
+		// Defaults to a reasonable value of 100.
+		//
+		ReservoirSize int `yaml:"reservoirSize"`
+
+	} `yaml:"metrics"`
+
 	// ControlTokens is a list of all control bearer
 	// tokens, which should be given to systems that
 	// are allowed to orchestrate upload, download,

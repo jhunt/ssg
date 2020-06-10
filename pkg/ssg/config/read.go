@@ -35,6 +35,9 @@ func (c Config) Resolve() (Config, error) {
 	if c.SweepInterval <= 0 {
 		c.SweepInterval = Default.SweepInterval
 	}
+	if c.Metrics.ReservoirSize <= 0 {
+		c.Metrics.ReservoirSize = Default.Metrics.ReservoirSize
+	}
 	if c.DefaultBucket.Compression == "" {
 		c.DefaultBucket.Compression = Default.DefaultBucket.Compression
 	}

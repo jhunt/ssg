@@ -81,11 +81,11 @@ func (p Provider) Upload(hint string) (provider.Uploader, error) {
 }
 
 func (p Provider) Download(path string) (provider.Downloader, error) {
-	dl, err := p.client.Get(path)
+	get, err := p.client.Get(path)
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.NopCloser(dl), nil
+	return provider.MeteredDownload(ioutil.NopCloser(get))
 }
 
 func (p Provider) Expunge(path string) error {

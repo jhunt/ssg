@@ -25,6 +25,7 @@ func (s *Server) Sweep() {
 				}
 				log.Debugf(LOG+"clearing out upload stream %v... it expired on %s", id, upload.expires)
 				cancel[upload.id] = upload.writer
+				upload.bucket.metrics.CancelUpload()
 				delete(s.uploads, id)
 			}
 		}
@@ -36,6 +37,7 @@ func (s *Server) Sweep() {
 					logged = true
 				}
 				log.Debugf(LOG+"clearing out download stream %v... it expired on %s", id, download.expires)
+				download.bucket.metrics.CancelDownload()
 				delete(s.downloads, id)
 			}
 		}

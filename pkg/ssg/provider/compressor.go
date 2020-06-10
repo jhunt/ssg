@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"compress/zlib"
+
+	"github.com/jhunt/shield-storage-gateway/pkg/meter"
 )
 
 func Compress(ul Uploader, alg string) (Uploader, error) {
@@ -25,7 +27,14 @@ func Decompress(dl Downloader, alg string) (Downloader, error) {
 	case "none", "":
 		return dl, nil
 	case "zlib":
-		return zlib.NewReader(dl)
+		zr, err := zlib.NewReader(dl)
+		if err != nil {
+			return nil, err
+		}
+		return &ZlibDownloader{
+			r:     meter.NewReader(zr),
+			inner: dl,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported compression algorithem: '%s'", alg)
 	}

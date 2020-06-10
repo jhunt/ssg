@@ -95,7 +95,7 @@ func (p Provider) Download(path string) (provider.Downloader, error) {
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("%s: HTTP %s", req.URL, res.Status)
 	}
-	return res.Body, nil
+	return provider.MeteredDownload(res.Body)
 }
 
 func (p Provider) Expunge(path string) error {

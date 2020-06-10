@@ -6,6 +6,8 @@ sweepInterval: 1
 controlTokens:
   - 'test-control-token-apqlwoskeij'
   - 'test-admin-token-ghtyyfjkrudke'
+monitorTokens:
+  - 'test-monitor-token-jjqwhrexck1'
 defaultBucket:
   compression: zlib
   encryption: aes256-ctr

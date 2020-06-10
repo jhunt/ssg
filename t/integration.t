@@ -17,6 +17,7 @@ my $BASE_URL = "http://127.0.0.1:$ENV{PUBLIC_PORT}";
 my ($TOKEN, $AUTH);
 sub as_control { $AUTH = 'test-control-token-apqlwoskeij'; }
 sub as_admin   { $AUTH = 'test-admin-token-ghtyyfjkrudke'; }
+sub as_monitor { $AUTH = 'test-monitor-token-jjqwhrexck1'; }
 sub as_agent   { $AUTH = undef; }
 
 my ($id, $CANON);
@@ -34,6 +35,13 @@ sub vault_secret {
 sub maybe_json {
 	my ($raw) = @_;
 	return eval { return decode_json($raw) } or undef;
+}
+
+sub atleast {
+	my ($n) = @_;
+	return code(sub {
+		return $_[0] >= $n;
+	});
 }
 
 my ($req, $res, $SUCCESS, $STATUS, $RESPONSE);
@@ -71,6 +79,22 @@ sub POST {
   ($SUCCESS, $STATUS, $RESPONSE) = ($res->is_success, $res->code, maybe_json($res->decoded_content));
 }
 
+sub DELETE {
+  my ($url) = @_;
+  $url =~ s|^/||;
+
+  $req = HTTP::Request->new(DELETE => "$BASE_URL/$url")
+    or die "failed to make [DELETE /$url] request: $!\n";
+  $req->header('Authorization' => "Bearer $AUTH") if  $AUTH;
+  $req->header('X-SSG-Token' => $TOKEN)           if !$AUTH && $TOKEN;
+  $req->header('Accept'       => 'application/json');
+
+  diag $req->as_string if $ENV{DEBUG_HTTP};
+  $res = $UA->request($req);
+  diag $res->as_string if $ENV{DEBUG_HTTP};
+  ($SUCCESS, $STATUS) = ($res->is_success, $res->code);
+}
+
 diag "setting up docker-compose integration environment...\n";
 system('t/setup');
 is $?, 0, 't/setup should exit zero (success)'
@@ -87,6 +111,35 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 			or diag $res->as_string;
 		POST '/control', { kind => 'expunge', target => "ssg://cluster1/$BUCKET/a/file" };
 		ok !$SUCCESS, "attempting to expunge a file as the agent should fail"
+			or diag $res->as_string;
+		GET '/streams';
+		ok !$SUCCESS, "attempting to retrieve streams as the agent should fail"
+			or diag $res->as_string;
+		GET '/metrics';
+		ok !$SUCCESS, "attempting to retrieve metrics as the agent should fail"
+			or diag $res->as_string;
+		DELETE '/metrics';
+		ok !$SUCCESS, "attempting to clear metrics as the agent should fail"
+			or diag $res->as_string;
+
+		as_monitor;
+		POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
+		ok !$SUCCESS, "attempting to create an upload as the monitor should fail"
+			or diag $res->as_string;
+		POST '/control', { kind => 'download', target => "ssg://cluster1/$BUCKET/a/file" };
+		ok !$SUCCESS, "attempting to create a download as the monitor should fail"
+			or diag $res->as_string;
+		POST '/control', { kind => 'expunge', target => "ssg://cluster1/$BUCKET/a/file" };
+		ok !$SUCCESS, "attempting to expunge a file as the monitor should fail"
+			or diag $res->as_string;
+		GET '/streams';
+		ok !$SUCCESS, "attempting to retrieve streams as the monitor should fail"
+			or diag $res->as_string;
+		GET '/metrics';
+		ok $SUCCESS, "attempting to retrieve metrics as the agent should succeed"
+			or diag $res->as_string;
+		DELETE '/metrics';
+		ok $SUCCESS, "attempting to clear metrics as the agent should succeed"
 			or diag $res->as_string;
 
 		#as_admin;
@@ -105,6 +158,43 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 		ok $SUCCESS, "should be able to retrieve streams as admin"
 			or diag $res->as_string;
 		cmp_deeply($RESPONSE, [], "no streams should exist");
+
+		as_monitor;
+		GET '/metrics';
+		ok $SUCCESS, "should be able retrieve metrics as the monitor"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, superhashof({
+			$BUCKET => {
+				operations => {
+					upload => 0,
+					download => 0,
+					expunge => 0,
+				},
+				canceled => {
+					upload => 0,
+					download => 0,
+				},
+				segments => {
+					total => 0,
+					bytes => {
+						minimum => 0.0,
+						maximum => 0.0,
+						median => 0.0,
+						sigma => 0.0,
+					},
+				},
+				transfer => {
+					front => {
+						in => 0,
+						out => 0,
+					},
+					back => {
+						in => 0,
+						out => 0,
+					},
+				},
+			},
+		}), "metrics should be initially blank");
 
 		as_control;
 		POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
@@ -138,9 +228,47 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 			},
 		], "our upload stream should be listed");
 
+		as_monitor;
+		GET '/metrics';
+		ok $SUCCESS, "should be able to retrieve metrics after starting an upload"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, superhashof({
+			$BUCKET => {
+				operations => {
+					upload => 1,
+					download => 0,
+					expunge => 0,
+				},
+				canceled => {
+					upload => 0,
+					download => 0,
+				},
+				segments => {
+					total => 0,
+					bytes => {
+						minimum => 0.0,
+						maximum => 0.0,
+						median => 0.0,
+						sigma => 0.0,
+					},
+				},
+				transfer => {
+					front => {
+						in => 0,
+						out => 0,
+					},
+					back => {
+						in => 0,
+						out => 0,
+					},
+				},
+			},
+		}), "metrics should reflect our new upload operation");
+
+		my $DATA = "this is the first line\n";
 		as_agent;
 		POST "/blob/$id", {
-			data => encode_base64("this is the first line\n"),
+			data => encode_base64($DATA),
 			eof  => $JSON::true,
 		};
 		ok $SUCCESS, "posting data to the upload stream (as the agent) should succeed"
@@ -148,7 +276,8 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 		cmp_deeply($RESPONSE, {
 			segments => 1,
 			compressed => re(qr/^\d+$/),
-			uncompressed => length("this is the first line\n"),
+			uncompressed => length($DATA),
+			sent => length($DATA),
 		}, "posting the final segment should return blob details");
 
 		# check the encryption parameters here,
@@ -163,6 +292,43 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 		is -s local_fs_path(), $RESPONSE->{compressed}, "file should be \$compressed bytes long"
 			if $BUCKET eq 'files';
 		isnt $RESPONSE->{uncompressed}, $RESPONSE->{compressed}, "uncompressed data should be a different size than compressed";
+
+		as_monitor;
+		GET '/metrics';
+		ok $SUCCESS, "should be able to retrieve metrics after upload a segment"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, superhashof({
+			$BUCKET => {
+				operations => {
+					upload => 1,
+					download => 0,
+					expunge => 0,
+				},
+				canceled => {
+					upload => 0,
+					download => 0,
+				},
+				segments => {
+					total => 1,
+					bytes => {
+						minimum => length($DATA),
+						maximum => length($DATA),
+						median => length($DATA),
+						sigma => 0.0,
+					},
+				},
+				transfer => {
+					front => {
+						in => length($DATA),
+						out => 0,
+					},
+					back => {
+						in => 0,
+						out => atleast(35), # "compressed"
+					},
+				},
+			},
+		}), "metrics should reflect our new upload operation");
 
 		POST "/blob/$id", {
 			data => encode_base64("this is too much stuff\n"),
@@ -199,6 +365,26 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 		$TOKEN = $RESPONSE->{token};
 		$id    = $RESPONSE->{id};
 
+		as_monitor;
+		GET '/metrics';
+		ok $SUCCESS, "should be able to retrieve metrics after starting a download"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, superhashof({
+			$BUCKET => {
+				operations => {
+					upload => 1,
+					download => 1,
+					expunge => 0,
+				},
+				canceled => ignore,
+				segments => {
+					total => 1,
+					bytes => ignore,
+				},
+				transfer => ignore,
+			},
+		}), "metrics should reflect our new download operation");
+
 		as_admin;
 		GET '/streams';
 		ok $SUCCESS, "should be able to retrieve streams as admin"
@@ -220,6 +406,43 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 		is $res->decoded_content, "this is the first line\n",
 			"downloading the blob should return original data posted";
 
+		as_monitor;
+		GET '/metrics';
+		ok $SUCCESS, "should be able to retrieve metrics after downloading data"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, superhashof({
+			$BUCKET => {
+				operations => { # SAME
+					upload => 1,
+					download => 1,
+					expunge => 0,
+				},
+				canceled => { # SAME
+					upload => 0,
+					download => 0,
+				},
+				segments => { # SAME
+					total => 1,
+					bytes => {
+						minimum => length($DATA),
+						maximum => length($DATA),
+						median => length($DATA),
+						sigma => 0.0,
+					},
+				},
+				transfer => {
+					front => {
+						in => length($DATA),
+						out => length($DATA),
+					},
+					back => {
+						in => atleast(35), # "compressed"
+						out => atleast(35), # "compressed"
+					},
+				},
+			},
+		}), "metrics should reflect our new upload operation");
+
 		as_control;
 		ok  -f local_fs_path(), "file should still be in file storage"
 			if $BUCKET eq 'files';
@@ -231,6 +454,26 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 
 		system("./t/vault check '".vault_secret()."'");
 		ok $? != 0, 'should no longer have encryption cipher in the vault';
+
+		as_monitor;
+		GET '/metrics';
+		ok $SUCCESS, "should be able to retrieve metrics after expunging data"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, superhashof({
+			$BUCKET => {
+				operations => { # SAME
+					upload => 1,
+					download => 1,
+					expunge => 1,
+				},
+				canceled => { # SAME
+					upload => 0,
+					download => 0,
+				},
+				segments => ignore,
+				transfer => ignore,
+			},
+		}), "metrics should reflect our new expunge operation");
 
 		## timeout
 		as_control;
@@ -248,6 +491,27 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 		$TOKEN = $RESPONSE->{token};
 		$id    = $RESPONSE->{id};
 		$CANON = $RESPONSE->{canon};
+
+		as_monitor;
+		GET '/metrics';
+		ok $SUCCESS, "should be able to retrieve metrics after starting a second upload"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, superhashof({
+			$BUCKET => {
+				operations => {
+					upload => 2,
+					download => 1,
+					expunge => 1,
+				},
+				canceled => {
+					upload => 0,
+					download => 0,
+				},
+				segments => ignore,
+				transfer => ignore,
+			},
+		}), "metrics should reflect our new upload operation");
+
 		system("./t/vault check '".vault_secret()."'");
 		ok $? == 0, 'should have encryption cipher in the vault';
 
@@ -258,8 +522,51 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 		};
 		ok $SUCCESS, "posting data to the upload stream (as the agent) should succeed"
 			or diag $res->as_string;
+
+		as_monitor;
+		GET '/metrics';
+		ok $SUCCESS, "should be able to retrieve metrics after uploading a segment to the second upload"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, superhashof({
+			$BUCKET => {
+				operations => { # SAME
+					upload => 2,
+					download => 1,
+					expunge => 1,
+				},
+				canceled => { # SAME
+					upload => 0,
+					download => 0,
+				},
+				segments => {
+					total => 2,
+					bytes => {
+						minimum => 7,
+						maximum => length($DATA), # 23
+						median => num(15.0, 0.01),
+						sigma => num(11.314, 0.01),
+					},
+				},
+				transfer => {
+					front => {
+						in => length($DATA)+7,
+						out => length($DATA),
+					},
+					back => {
+						in => atleast(35), # "compressed"
+						out => atleast(35), # "compressed"
+						#              ^^
+						# out hasn't moved, because we haven't flushed
+						# the zlib writer (we wait until we have enough
+						# data to make it worthwhile, dictionary-wise).
+					},
+				},
+			},
+		}), "metrics should reflect our second segment");
+
 		diag "sleeping 5s waiting for our blob to timeout...";
 		sleep 5;
+		as_agent
 		POST "/blob/$id", {
 			data => encode_base64("the rest of the file...\n"),
 			eof  => $JSON::true,
@@ -268,6 +575,27 @@ for my $BUCKET (qw/files minio minio-with-prefix webdav/) {
 			or diag $res->as_string;
 		system("./t/vault check '".vault_secret()."'");
 		ok $? != 0, 'should no longer have encryption cipher in the vault';
+
+		as_monitor;
+		GET '/metrics';
+		ok $SUCCESS, "should be able to retrieve metrics after uploading a segment to the second upload"
+			or diag $res->as_string;
+		cmp_deeply($RESPONSE, superhashof({
+			$BUCKET => {
+				operations => { # SAME
+					upload => 2,
+					download => 1,
+					expunge => 1,
+				},
+				canceled => { # SAME
+					upload => 1,
+					download => 0,
+				},
+				segments => ignore,
+				transfer => ignore,
+			},
+		}), "metrics should reflect our canceled upload");
+
 	}
 }
 
