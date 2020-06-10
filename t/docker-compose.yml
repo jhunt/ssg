@@ -23,7 +23,7 @@ version: '2'
 services:
   vault:
     build:
-      context: aux
+      context: build
       dockerfile: Dockerfile.vault
     environment:
       - VAULT_DEV_ROOT_TOKEN_ID=ichaeZeeth5ichi1OhxooSahpoo8wa
