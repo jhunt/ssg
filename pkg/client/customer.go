@@ -51,7 +51,7 @@ func (c *Customer) send(id, token string, data []byte, eof bool) (int, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("X-SSG-Token", token)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	res, err := c.Client.Do(req)
 	if err != nil {
@@ -99,7 +99,7 @@ func (c *Customer) Download(id, token string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("X-SSG-Token", token)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	res, err := c.Client.Do(req)
 	if err != nil {

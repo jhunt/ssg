@@ -18,7 +18,7 @@ my ($TOKEN, $AUTH);
 sub as_control { $AUTH = 'test-control-token-apqlwoskeij'; }
 sub as_admin   { $AUTH = 'test-admin-token-ghtyyfjkrudke'; }
 sub as_monitor { $AUTH = 'test-monitor-token-jjqwhrexck1'; }
-sub as_agent   { $AUTH = undef; }
+sub as_agent   { $AUTH = $TOKEN; }
 
 my ($id, $CANON);
 sub local_fs_path {
@@ -51,8 +51,7 @@ sub GET {
 
   $req = HTTP::Request->new(GET => "$BASE_URL/$url")
     or die "failed to make [GET /$url] request: $!\n";
-  $req->header('Authorization' => "Bearer $AUTH") if  $AUTH;
-  $req->header('X-SSG-Token' => $TOKEN)           if !$AUTH && $TOKEN;
+  $req->header('Authorization' => "Bearer $AUTH") if $AUTH;
   $req->header('Accept' => 'application/json');
 
   diag $req->as_string if $ENV{DEBUG_HTTP};
@@ -67,8 +66,7 @@ sub POST {
 
   $req = HTTP::Request->new(POST => "$BASE_URL/$url")
     or die "failed to make [POST /$url] request: $!\n";
-  $req->header('Authorization' => "Bearer $AUTH") if  $AUTH;
-  $req->header('X-SSG-Token' => $TOKEN)           if !$AUTH && $TOKEN;
+  $req->header('Authorization' => "Bearer $AUTH") if $AUTH;
   $req->header('Accept'       => 'application/json');
   $req->header('Content-Type' => 'application/json') if $payload;
   $req->content(encode_json($payload))               if $payload;
@@ -85,8 +83,7 @@ sub DELETE {
 
   $req = HTTP::Request->new(DELETE => "$BASE_URL/$url")
     or die "failed to make [DELETE /$url] request: $!\n";
-  $req->header('Authorization' => "Bearer $AUTH") if  $AUTH;
-  $req->header('X-SSG-Token' => $TOKEN)           if !$AUTH && $TOKEN;
+  $req->header('Authorization' => "Bearer $AUTH") if $AUTH;
   $req->header('Accept'       => 'application/json');
 
   diag $req->as_string if $ENV{DEBUG_HTTP};

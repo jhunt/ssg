@@ -14,30 +14,6 @@ import (
 func (s *Server) Router(helo string) *route.Router {
 	r := &route.Router{}
 
-	authz := func(r *route.Request, allowed []string) bool {
-		tok := r.Req.Header.Get("Authorization")
-		if tok == "" {
-			r.Fail(route.Unauthorized(nil, "control auth required"))
-			return false
-		}
-
-		if !strings.HasPrefix(tok, "Bearer ") {
-			r.Fail(route.Forbidden(nil, "forbidden"))
-			return false
-		}
-
-		tok = strings.TrimPrefix(tok, "Bearer ")
-
-		for i := range allowed {
-			if allowed[i] == tok {
-				return true
-			}
-		}
-
-		r.Fail(route.Forbidden(nil, "forbidden"))
-		return false
-	}
-
 	r.Dispatch("GET /", func(r *route.Request) {
 		r.Success(helo)
 	})
@@ -135,7 +111,11 @@ func (s *Server) Router(helo string) *route.Router {
 	})
 
 	r.Dispatch("GET /blob/:id", func(r *route.Request) {
-		token := r.Req.Header.Get("X-SSG-Token")
+		token, present := requireBearerToken(r, "blob auth")
+		if !present {
+			return
+		}
+
 		downstream, ok := s.getDownload(r.Args[1], token)
 		if !ok {
 			r.Fail(route.NotFound(nil, "stream not found"))
@@ -149,7 +129,11 @@ func (s *Server) Router(helo string) *route.Router {
 	})
 
 	r.Dispatch("POST /blob/:id", func(r *route.Request) {
-		token := r.Req.Header.Get("X-SSG-Token")
+		token, present := requireBearerToken(r, "blob auth")
+		if !present {
+			return
+		}
+
 		upstream, ok := s.getUpload(r.Args[1], token)
 		if !ok {
 			r.Fail(route.NotFound(nil, "stream not found"))
@@ -269,4 +253,41 @@ func (s *Server) Router(helo string) *route.Router {
 	})
 
 	return r
+}
+
+func getBearerToken(r *route.Request) (string, bool) {
+	if token := r.Req.Header.Get("Authorization"); token == "" {
+		return "", false
+	} else if strings.HasPrefix(token, "Bearer ") {
+		return strings.TrimPrefix(token, "Bearer "), true
+	}
+	return "", true
+}
+
+func requireBearerToken(r *route.Request, typ string) (string, bool) {
+	token, present := getBearerToken(r)
+	if !present {
+		r.Fail(route.Unauthorized(nil, typ+" required"))
+		return "", false
+	} else if token == "" {
+		r.Fail(route.Forbidden(nil, typ+" forbidden"))
+		return "", false
+	}
+	return token, true
+}
+
+func authz(r *route.Request, allowed []string) bool {
+	token, present := requireBearerToken(r, "control auth")
+	if !present {
+		return false
+	}
+
+	for i := range allowed {
+		if allowed[i] == token {
+			return true
+		}
+	}
+
+	r.Fail(route.Forbidden(nil, "control auth forbidden"))
+	return false
 }
