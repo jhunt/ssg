@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"testing"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/meter"
+	"github.com/jhunt/ssg/pkg/meter"
 )
 
 func TestSuite(t *testing.T) {

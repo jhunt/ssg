@@ -10,7 +10,7 @@ import (
 	"github.com/jhunt/go-log"
 
 	"github.com/cloudfoundry-community/vaultkv"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/vault"
+	"github.com/jhunt/ssg/pkg/ssg/vault"
 )
 
 type Vault struct {

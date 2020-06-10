@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"testing"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/rand"
+	"github.com/jhunt/ssg/pkg/rand"
 )
 
 func TestSuite(t *testing.T) {

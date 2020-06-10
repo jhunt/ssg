@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/url"
+	"github.com/jhunt/ssg/pkg/url"
 )
 
 var _ = Describe("SSG URLs", func() {

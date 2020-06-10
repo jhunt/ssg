@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/rand"
+	"github.com/jhunt/ssg/pkg/rand"
 )
 
 func (s *stream) lease(life time.Duration) {

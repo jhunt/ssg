@@ -8,7 +8,7 @@ import (
 	"github.com/jhunt/go-log"
 	"github.com/jhunt/go-route"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/url"
+	"github.com/jhunt/ssg/pkg/url"
 )
 
 func (s *Server) Router(helo string) *route.Router {

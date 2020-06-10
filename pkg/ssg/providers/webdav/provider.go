@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/rand"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
+	"github.com/jhunt/ssg/pkg/rand"
+	"github.com/jhunt/ssg/pkg/ssg/provider"
 )
 
 const RandomFile = ""

@@ -12,8 +12,8 @@ import (
 	env "github.com/jhunt/go-envirotron"
 	"github.com/jhunt/go-log"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/client"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg"
+	"github.com/jhunt/ssg/pkg/client"
+	"github.com/jhunt/ssg/pkg/ssg"
 )
 
 var Version = ""

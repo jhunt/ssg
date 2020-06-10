@@ -3,7 +3,7 @@ package vault
 import (
 	"io"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
+	"github.com/jhunt/ssg/pkg/ssg/provider"
 )
 
 type Vault interface {

@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/vault"
+	"github.com/jhunt/ssg/pkg/ssg/provider"
+	"github.com/jhunt/ssg/pkg/ssg/vault"
 )
 
 type stream struct {

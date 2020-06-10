@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 	"testing"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/providers/fs"
+	"github.com/jhunt/ssg/pkg/ssg/providers/fs"
 )
 
 func TestSuite(t *testing.T) {

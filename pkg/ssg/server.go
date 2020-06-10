@@ -8,17 +8,17 @@ import (
 
 	"github.com/jhunt/go-log"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/rand"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/config"
-	"github.com/jhunt/shield-storage-gateway/pkg/url"
+	"github.com/jhunt/ssg/pkg/rand"
+	"github.com/jhunt/ssg/pkg/ssg/config"
+	"github.com/jhunt/ssg/pkg/url"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/providers/fs"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/providers/s3"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/providers/webdav"
+	"github.com/jhunt/ssg/pkg/ssg/provider"
+	"github.com/jhunt/ssg/pkg/ssg/providers/fs"
+	"github.com/jhunt/ssg/pkg/ssg/providers/s3"
+	"github.com/jhunt/ssg/pkg/ssg/providers/webdav"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/vault"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/vaults/hashicorp"
+	"github.com/jhunt/ssg/pkg/ssg/vault"
+	"github.com/jhunt/ssg/pkg/ssg/vaults/hashicorp"
 )
 
 func (s *Server) startUpload(to *url.URL) (*stream, string, error) {

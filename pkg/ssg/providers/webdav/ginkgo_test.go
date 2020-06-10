@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"testing"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/providers/webdav"
+	"github.com/jhunt/ssg/pkg/ssg/providers/webdav"
 )
 
 func TestSuite(t *testing.T) {

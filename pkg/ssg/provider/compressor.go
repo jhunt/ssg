@@ -5,7 +5,7 @@ import (
 
 	"compress/zlib"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/meter"
+	"github.com/jhunt/ssg/pkg/meter"
 )
 
 func Compress(ul Uploader, alg string) (Uploader, error) {

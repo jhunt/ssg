@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"testing"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/providers/s3"
+	"github.com/jhunt/ssg/pkg/ssg/providers/s3"
 )
 
 func TestSuite(t *testing.T) {

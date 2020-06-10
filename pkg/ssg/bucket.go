@@ -3,8 +3,8 @@ package ssg
 import (
 	"github.com/jhunt/go-log"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/provider"
-	"github.com/jhunt/shield-storage-gateway/pkg/ssg/vault"
+	"github.com/jhunt/ssg/pkg/ssg/provider"
+	"github.com/jhunt/ssg/pkg/ssg/vault"
 )
 
 func (b *bucket) Upload(s string) (provider.Uploader, error) {

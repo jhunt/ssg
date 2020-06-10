@@ -3,7 +3,7 @@ package provider
 import (
 	"io"
 
-	"github.com/jhunt/shield-storage-gateway/pkg/meter"
+	"github.com/jhunt/ssg/pkg/meter"
 )
 
 type MeteredDownloader struct {
