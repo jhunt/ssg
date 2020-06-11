@@ -14,6 +14,7 @@ import (
 
 	"github.com/jhunt/ssg/pkg/ssg/provider"
 	"github.com/jhunt/ssg/pkg/ssg/providers/fs"
+	"github.com/jhunt/ssg/pkg/ssg/providers/gcs"
 	"github.com/jhunt/ssg/pkg/ssg/providers/s3"
 	"github.com/jhunt/ssg/pkg/ssg/providers/webdav"
 
@@ -195,6 +196,18 @@ func NewServer(c config.Config) (*Server, error) {
 			candidate, err := fs.Configure(b.Provider.FS.Root)
 			if err != nil {
 				return nil, fmt.Errorf("fs bucket %v could not be configured: %s", b.Key, err)
+			}
+			p = candidate
+
+		case "gcs":
+			log.Infof(LOG+"configuring bucket %v backed by gcs (bucket=%v, prefix=%v)", b.Key, b.Provider.GCS.Bucket, b.Provider.GCS.Prefix)
+			candidate, err := gcs.Configure(gcs.Endpoint{
+				Bucket: b.Provider.GCS.Bucket,
+				Prefix: b.Provider.GCS.Prefix,
+				Key: b.Provider.GCS.Key,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("gcs bucket %v could not be configured: %s", b.Key, err)
 			}
 			p = candidate
 

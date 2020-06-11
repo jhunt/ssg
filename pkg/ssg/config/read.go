@@ -108,6 +108,10 @@ func (c Config) Resolve() (Config, error) {
 			if err := bucket.Provider.FS.validate(); err != nil {
 				return c, fmt.Errorf("invalid configuration for fs-backed bucket '%s': %s", bucket.Key, err)
 			}
+		case "gcs":
+			if err := bucket.Provider.GCS.validate(); err != nil {
+				return c, fmt.Errorf("invalid configuration for gcs-backed bucket '%s': %s", bucket.Key, err)
+			}
 		case "s3":
 			if err := bucket.Provider.S3.validate(); err != nil {
 				return c, fmt.Errorf("invalid configuration for s3-backed bucket '%s': %s", bucket.Key, err)

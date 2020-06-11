@@ -69,6 +69,18 @@ func (fs *FS) validate() error {
 	return nil
 }
 
+func (gcs *GCS) validate() error {
+	if gcs == nil {
+		return fmt.Errorf("no gcs configuration supplied")
+	}
+
+	if gcs.Bucket == "" {
+		return fmt.Errorf("no bucket provided")
+	}
+
+	return nil
+}
+
 func (s3 *S3) validate() error {
 	if s3 == nil {
 		return fmt.Errorf("no s3 configuration supplied")

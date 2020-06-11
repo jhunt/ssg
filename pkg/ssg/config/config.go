@@ -145,7 +145,7 @@ type Config struct {
 			// members of this object can and should be
 			// consulted for the rest of the configuration.
 			//
-			// Valid values are 'webdav', 's3', and 'fs'.
+			// Valid values are 'fs', 'gcs', 's3', and 'webdav'.
 			//
 			Kind string `yaml:"kind"`
 
@@ -157,6 +157,12 @@ type Config struct {
 			// well in test / dev environments, and small deployments.
 			//
 			FS *FS `yaml:"fs"`
+
+			// GCS represents the configuration for Google's Cloud
+			// Storage solution (often called GCS) that makes up part
+			// of their Google Cloud Platform.
+			//
+			GCS *GCS `yaml:"gcs"`
 
 			// S3 represents the configuration for many blob storage
 			// providers that export an API similar or identical to

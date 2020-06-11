@@ -634,6 +634,50 @@ defaultBucket:
 buckets:
   - key: store
     provider:
+      kind: gcs
+`))
+			Ω(err).Should(HaveOccurred())
+		})
+
+		It("should fail if we forget the gcs bucket", func() {
+			_, err := config.Read([]byte(`---
+cluster: test
+controlTokens:
+  - foo
+defaultBucket:
+  vault:
+    kind: hashicorp
+    hashicorp:
+      url:    https://127.0.0.1:8200
+      prefix: secret/shared/ssg/test
+      token:  s.ThIsIsNeXaMpLeToKeN
+
+buckets:
+  - key: store
+    provider:
+      kind: gcs
+      gcs:
+#        bucket: some-storage-bucket-in-gcs
+`))
+			Ω(err).Should(HaveOccurred())
+		})
+
+		It("should fail if we forget the s3 configuration altogether", func() {
+			_, err := config.Read([]byte(`---
+cluster: test
+controlTokens:
+  - foo
+defaultBucket:
+  vault:
+    kind: hashicorp
+    hashicorp:
+      url:    https://127.0.0.1:8200
+      prefix: secret/shared/ssg/test
+      token:  s.ThIsIsNeXaMpLeToKeN
+
+buckets:
+  - key: store
+    provider:
       kind: s3
 `))
 			Ω(err).Should(HaveOccurred())
