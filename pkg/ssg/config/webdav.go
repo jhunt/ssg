@@ -1,5 +1,10 @@
 package config
 
+import (
+	"fmt"
+	"net/url"
+)
+
 // WebDAV represents a storage backend that implements
 // RFC-4918 Web Distributed Authoring and Versioning
 // extensions for HTTP, a read-write version of a
@@ -35,4 +40,27 @@ type WebDAV struct {
 	// normal operation.
 	//
 	CA CA `yaml:"ca"`
+}
+
+func (webdav *WebDAV) validate() error {
+	if webdav == nil {
+		return fmt.Errorf("no webdav configuration supplied")
+	}
+
+	if webdav.URL == "" {
+		return fmt.Errorf("no webdav url provided")
+	}
+
+	u, err := url.Parse(webdav.URL)
+	if err != nil {
+		return fmt.Errorf("webdav url '%s' is malformed: %s", webdav.URL, err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return fmt.Errorf("webdav url '%s' is malformed", webdav.URL)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("webdav url '%s' is malformed", webdav.URL)
+	}
+
+	return nil
 }

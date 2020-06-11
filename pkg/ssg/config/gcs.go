@@ -1,5 +1,9 @@
 package config
 
+import (
+	"fmt"
+)
+
 // GCS represents the configuration for Google's Cloud
 // Storage solution (often called GCS) that makes up part
 // of their GCS Cloud Platform.
@@ -26,4 +30,16 @@ type GCS struct {
 	// with a trailing forward slash ('/').
 	//
 	Prefix string `yaml:"prefix"`
+}
+
+func (gcs *GCS) validate() error {
+	if gcs == nil {
+		return fmt.Errorf("no gcs configuration supplied")
+	}
+
+	if gcs.Bucket == "" {
+		return fmt.Errorf("no bucket provided")
+	}
+
+	return nil
 }

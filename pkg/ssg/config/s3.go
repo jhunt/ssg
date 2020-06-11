@@ -1,5 +1,9 @@
 package config
 
+import (
+	"fmt"
+)
+
 // S3 represents the configuration for many blob storage
 // providers that export an API similar or identical to
 // that of Amazon's Simple Scalable Storage service, S3.
@@ -70,4 +74,30 @@ type S3 struct {
 	// 169.x.x.x endpoint.
 	//
 	InstanceMetadata bool `yaml:"instanceMetadata"`
+}
+
+func (s3 *S3) validate() error {
+	if s3 == nil {
+		return fmt.Errorf("no s3 configuration supplied")
+	}
+
+	if s3.Region == "" {
+		return fmt.Errorf("no region provided")
+	}
+
+	if s3.Bucket == "" {
+		return fmt.Errorf("no bucket provided")
+	}
+
+	iam := s3.InstanceMetadata
+	aki := s3.AccessKeyID != "" && s3.SecretAccessKey != ""
+
+	if iam && aki {
+		return fmt.Errorf("instance metadata and access key authentication are mutually exclusive")
+	}
+	if !iam && !aki {
+		return fmt.Errorf("no authentication mechanism defined")
+	}
+
+	return nil
 }

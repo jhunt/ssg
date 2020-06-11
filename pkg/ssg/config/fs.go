@@ -1,5 +1,10 @@
 package config
 
+import (
+	"fmt"
+	"strings"
+)
+
 // FS represents a local-filesystem storage provider,
 // where blobs are persisted to local disk, on the SSG.
 //
@@ -14,4 +19,20 @@ type FS struct {
 	// store files under those.
 	//
 	Root string `yaml:"root"`
+}
+
+func (fs *FS) validate() error {
+	if fs == nil {
+		return fmt.Errorf("no fs configuration supplied")
+	}
+
+	if fs.Root == "" {
+		return fmt.Errorf("no root filesystem path provided")
+	}
+
+	if !strings.HasPrefix(fs.Root, "/") {
+		return fmt.Errorf("root filesystem path provided as relative path (must be absolute)")
+	}
+
+	return nil
 }
