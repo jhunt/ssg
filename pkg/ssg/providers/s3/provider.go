@@ -77,6 +77,7 @@ func (p Provider) Upload(hint string) (provider.Uploader, error) {
 	if key == RandomKey {
 		key = rand.Path()
 	}
+	key = p.prefix + key
 
 	up, err := p.client.NewUpload(key, nil)
 	if err != nil {
