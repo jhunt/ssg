@@ -5,28 +5,25 @@ import (
 )
 
 func j2y(v interface{}) interface{} {
-	switch v.(type) {
+	switch x := v.(type) {
 	case map[string]interface{}:
-		m := v.(map[string]interface{})
-		for k, v := range m {
-			m[k] = j2y(v)
+		for k, v := range x {
+			x[k] = j2y(v)
+		}
+		return x
+
+	case map[interface{}]interface{}:
+		m := make(map[string]interface{})
+		for k, v := range x {
+			m[fmt.Sprintf("%s", k)] = j2y(v)
 		}
 		return m
 
-	case map[interface{}]interface{}:
-		m := v.(map[interface{}]interface{})
-		mm := make(map[string]interface{})
-		for k, v := range m {
-			mm[fmt.Sprintf("%s", k)] = j2y(v)
-		}
-		return mm
-
 	case []interface{}:
-		l := v.([]interface{})
-		for i, v := range l {
-			l[i] = j2y(v)
+		for i, v := range x {
+			x[i] = j2y(v)
 		}
-		return l
+		return x
 	}
 
 	return v
