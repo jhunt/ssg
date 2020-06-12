@@ -123,8 +123,8 @@ buckets:
 			Ω(c.Bind).Should(Equal(":8080")) // default
 			Ω(c.ControlTokens).Should(Equal([]string{"foo"}))
 
-			Ω(c.DefaultBucket.Compression).Should(Equal("none")) // default
-			Ω(c.DefaultBucket.Encryption).Should(Equal("aes256-ctr"))  // default
+			Ω(c.DefaultBucket.Compression).Should(Equal("none"))      // default
+			Ω(c.DefaultBucket.Encryption).Should(Equal("aes256-ctr")) // default
 
 			Ω(c.DefaultBucket.Vault).ShouldNot(BeNil())
 			Ω(c.DefaultBucket.Vault.Kind).Should(Equal("hashicorp"))
@@ -138,7 +138,7 @@ buckets:
 			Ω(c.Buckets[0].Key).Should(Equal("store"))
 			Ω(c.Buckets[0].Name).Should(Equal("store")) // inferred
 			Ω(c.Buckets[0].Description).Should(Equal(""))
-			Ω(c.Buckets[0].Compression).Should(Equal("none")) // default
+			Ω(c.Buckets[0].Compression).Should(Equal("none"))      // default
 			Ω(c.Buckets[0].Encryption).Should(Equal("aes256-ctr")) // default
 			Ω(c.Buckets[0].Vault).ShouldNot(BeNil())
 			Ω(c.Buckets[0].Vault.Kind).Should(Equal("hashicorp"))

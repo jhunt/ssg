@@ -204,7 +204,7 @@ func NewServer(c config.Config) (*Server, error) {
 			candidate, err := gcs.Configure(gcs.Endpoint{
 				Bucket: b.Provider.GCS.Bucket,
 				Prefix: b.Provider.GCS.Prefix,
-				Key: b.Provider.GCS.Key,
+				Key:    b.Provider.GCS.Key,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("gcs bucket %v could not be configured: %s", b.Key, err)

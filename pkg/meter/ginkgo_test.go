@@ -1,8 +1,8 @@
 package meter_test
 
 import (
-	"io/ioutil"
 	"bytes"
+	"io/ioutil"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

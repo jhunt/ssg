@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"google.golang.org/api/storage/v1"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/storage/v1"
 
-	"github.com/jhunt/ssg/pkg/ssg/provider"
 	"github.com/jhunt/ssg/pkg/rand"
+	"github.com/jhunt/ssg/pkg/ssg/provider"
 )
 
 const RandomKey = ""
 
 type Endpoint struct {
-	Key interface{}
+	Key    interface{}
 	Bucket string
 	Prefix string
 }
 
 type Provider struct {
-	svc *storage.Service
+	svc    *storage.Service
 	bucket string
 	prefix string
 }
@@ -58,7 +58,7 @@ func Configure(e Endpoint) (Provider, error) {
 	}
 
 	return Provider{
-		svc: svc,
+		svc:    svc,
 		bucket: e.Bucket,
 		prefix: e.Prefix,
 	}, nil
