@@ -30,10 +30,6 @@ func (s *stream) expired() bool {
 	return !s.expires.After(time.Now())
 }
 
-func (s *stream) expire() {
-	s.expires = time.Now().Add(-1 * time.Second)
-}
-
 func (s *stream) renew() {
 	s.expires = time.Now().Add(s.renewal)
 }

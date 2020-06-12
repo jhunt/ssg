@@ -11,10 +11,6 @@ type delta struct {
 	base, n int64
 }
 
-func (d *delta) increment(by int64) {
-	d.n += by
-}
-
 func (d *delta) set(to int64) {
 	d.n = to
 }
