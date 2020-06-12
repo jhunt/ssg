@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -24,6 +25,14 @@ type Blob struct {
 	Segments     int   `json:"segments"`
 	Compressed   int64 `json:"compressed"`
 	Uncompressed int64 `json:"uncompressed"`
+}
+
+type Bucket struct {
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Compression string `json:"compression"`
+	Encryption  string `json:"encryption"`
 }
 
 type Client struct {
@@ -93,9 +102,7 @@ func (c *Client) control(kind, target string) (*Stream, error) {
 }
 
 func (c *Client) agent(id, token string, data []byte, eof bool) (int, error) {
-	if c.Client == nil {
-		c.Client = &http.Client{}
-	}
+	c.init()
 
 	var seg struct {
 		Data string `json:"data"`
@@ -132,6 +139,67 @@ func (c *Client) agent(id, token string, data []byte, eof bool) (int, error) {
 	}
 
 	return len(data), nil
+}
+
+func (c *Client) Ping() (string, error) {
+	c.init()
+
+	req, err := http.NewRequest("GET", c.url(), nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/json")
+	res, err := c.Client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return "", fmt.Errorf("bad HTTP response %s", res.Status)
+	}
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var out struct {
+		Helo string `json:"ok"`
+	}
+	err = json.Unmarshal(b, &out)
+	if err != nil {
+		return "", err
+	}
+	return out.Helo, nil
+}
+
+func (c *Client) Buckets() ([]Bucket, error) {
+	c.init()
+
+	req, err := http.NewRequest("GET", c.url("buckets"), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.ControlToken)
+	res, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("bad HTTP response %s", res.Status)
+	}
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var buckets []Bucket
+	return buckets, json.Unmarshal(b, &buckets)
 }
 
 func (c *Client) NewUpload(target string) (*Stream, error) {

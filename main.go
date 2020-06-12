@@ -33,7 +33,12 @@ func main() {
 		URL   string `cli:"-u, --url"   env:"SSG_URL"`
 		Token string `cli:"-t, --token" env:"SSG_CONTROL_TOKEN"`
 
+		Ping struct {
+			Quiet bool `cli:"-q, --quiet"`
+		} `cli:"ping"`
+
 		Control struct {
+			Buckets  struct{} `cli:"buckets, ls"`
 			Upload   struct{} `cli:"upload"`
 			Download struct{} `cli:"download"`
 			Expunge  struct{} `cli:"expunge, delete, rm"`
@@ -117,6 +122,47 @@ func main() {
 			os.Exit(2)
 		}
 
+		os.Exit(0)
+	}
+
+	if command == "ping" {
+		if opts.URL == "" {
+			fmt.Fprintf(os.Stderr, "!! missing required @Y{--url}\n")
+			os.Exit(1)
+		}
+		c := client.Client{URL: opts.URL}
+		helo, err := c.Ping()
+		if err != nil {
+			if !opts.Ping.Quiet {
+				fmt.Fprintf(os.Stderr, "!! @W{/ (ping)} failed: @R{%s}\n", err)
+			}
+			os.Exit(1)
+		}
+		if !opts.Ping.Quiet {
+			fmt.Printf("%s\n", helo)
+		}
+		os.Exit(0)
+	}
+
+	if command == "control buckets" {
+		c := controller(opts.URL, opts.Token, "SSG_CONTROL_TOKEN")
+		if len(args) > 0 {
+			fmt.Fprintf(os.Stderr, "!! extra arguments found\n")
+			os.Exit(1)
+		}
+
+		buckets, err := c.Buckets()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! @W{/buckets} failed: @R{%s}\n", err)
+			os.Exit(2)
+		}
+
+		b, err := json.MarshalIndent(buckets, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "!! failed to json: @R{%s}\n", err)
+			os.Exit(3)
+		}
+		fmt.Printf("%s\n", string(b))
 		os.Exit(0)
 	}
 
