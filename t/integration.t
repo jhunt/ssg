@@ -16,7 +16,6 @@ my $UA = LWP::UserAgent->new(agent => 'ssg-test/'.strftime("%Y%m%dT%H%M%S", gmti
 my $BASE_URL = "http://127.0.0.1:$ENV{PUBLIC_PORT}";
 my ($TOKEN, $AUTH);
 sub as_control { $AUTH = 'test-control-token-apqlwoskeij'; }
-sub as_admin   { $AUTH = 'test-admin-token-ghtyyfjkrudke'; }
 sub as_monitor { $AUTH = 'test-monitor-token-jjqwhrexck1'; }
 sub as_agent   { $AUTH = $TOKEN; }
 
@@ -185,18 +184,7 @@ for my $BUCKET (@buckets) {
 		ok $SUCCESS, "attempting to clear metrics as the agent should succeed"
 			or diag $res->as_string;
 
-		#as_admin;
-		#POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
-		#ok !$SUCCESS, "attempting to create an upload as the admin should fail"
-		#	or diag $res->as_string;
-		#POST '/control', { kind => 'download', target => "ssg://cluster1/$BUCKET/a/file" };
-		#ok !$SUCCESS, "attempting to create a download as the admin should fail"
-		#	or diag $res->as_string;
-		#POST '/control', { kind => 'expunge', target => "ssg://cluster1/$BUCKET/a/file" };
-		#ok !$SUCCESS, "attempting to expunge a file as the admin should fail"
-		#	or diag $res->as_string;
-
-		as_admin;
+		as_control;
 		GET '/streams';
 		ok $SUCCESS, "should be able to retrieve streams as admin"
 			or diag $res->as_string;
@@ -257,7 +245,6 @@ for my $BUCKET (@buckets) {
 		system("./t/vault check '".vault_secret()."'");
 		ok $? == 0, 'should have encryption cipher in the vault';
 
-		as_admin;
 		GET '/streams';
 		ok $SUCCESS, "should be able to retrieve streams as admin"
 			or diag $res->as_string;
@@ -385,7 +372,7 @@ for my $BUCKET (@buckets) {
 		ok !$SUCCESS, "attempting to download the blob with the same id/token should fail"
 			or diag $res->as_string;
 
-		as_admin;
+		as_control;
 		GET '/streams';
 		ok $SUCCESS, "should be able to retrieve streams as admin"
 			or diag $res->as_string;
@@ -428,7 +415,7 @@ for my $BUCKET (@buckets) {
 			},
 		}), "metrics should reflect our new download operation");
 
-		as_admin;
+		as_control;
 		GET '/streams';
 		ok $SUCCESS, "should be able to retrieve streams as admin"
 			or diag $res->as_string;
