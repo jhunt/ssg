@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+exec 1>&2
+echo
+
+export PUBLIC_PORT=${PUBLIC_PORT:-9077}
+docker-compose -p ssg_integration_tests -f t/docker-compose.yml down -v
