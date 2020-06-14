@@ -3,7 +3,7 @@ package vault
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"strings"
@@ -23,35 +23,32 @@ func parse(in string) (string, string) {
 	return l[0], l[1]
 }
 
-func NewCipher(alg string) (Cipher, error) {
-	c := Cipher{Algorithm: alg}
-
-	algorithm, _ := parse(alg)
-	switch algorithm {
-	case "aes128":
-		c.Key = make([]byte, 16)
-		c.IV = make([]byte, aes.BlockSize)
-
-	case "aes192":
-		c.Key = make([]byte, 24)
-		c.IV = make([]byte, aes.BlockSize)
-
-	case "aes256":
-		c.Key = make([]byte, 32)
-		c.IV = make([]byte, aes.BlockSize)
-
-	default:
-		return Cipher{}, fmt.Errorf("unrecognized encryption algorithm: '%s'", alg)
+func deriveLiteral(v Vault, keyp string, keysz int, ivp string, ivsz int) ([]byte, []byte, error) {
+	encoded, err := v.Provider.Get(keyp)
+	if err != nil {
+		return nil, nil, err
+	}
+	key, err := hex.DecodeString(string(encoded))
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if _, err := rand.Read(c.Key); err != nil {
-		return Cipher{}, fmt.Errorf("failed to generate %s encryption key: %s", alg, err)
+	encoded, err = v.Provider.Get(ivp)
+	if err != nil {
+		return nil, nil, err
 	}
-	if _, err := rand.Read(c.IV); err != nil {
-		return Cipher{}, fmt.Errorf("failed to generate %s initialization vector: %s", alg, err)
+	iv, err := hex.DecodeString(string(encoded))
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return c, nil
+	if len(key) != keysz {
+		return nil, nil, fmt.Errorf("insufficient key size (%d bytes): want exactly %d bytes", len(key), keysz)
+	}
+	if len(iv) != ivsz {
+		return nil, nil, fmt.Errorf("insufficient initialization vector size (%d bytes): want exactly %d bytes", len(key), ivsz)
+	}
+	return key, iv, nil
 }
 
 func (c Cipher) stream() (cipher.Stream, cipher.Stream, error) {

@@ -9,6 +9,7 @@ use HTTP::Request;
 use JSON qw/decode_json encode_json/;
 use POSIX qw/strftime/;
 use MIME::Base64 qw/encode_base64/;
+use Digest::SHA1;
 
 $ENV{PUBLIC_PORT} = 9077;
 
@@ -110,7 +111,7 @@ as_control;
 GET '/buckets';
 ok $SUCCESS, "attempting to list buckets as the control user should succeed"
 	or diag $res->as_string;
-cmp_deeply($RESPONSE, [
+cmp_deeply([grep { $_->{key} !~ m/^special-/ } @$RESPONSE], [
 	{
 		key => 'files',
 		name => 'Files',
@@ -142,7 +143,8 @@ cmp_deeply($RESPONSE, [
 ], "/buckets should list only pertinent bucket info, in defined order");
 
 my @buckets = map { $_->{key} } @$RESPONSE;
-for my $BUCKET (@buckets) {
+for my $BUCKET (grep { ! m/^special-/ } @buckets) {
+	last if $ENV{SKIP_PROVIDER_TESTS};
 	subtest "$BUCKET bucket" => sub {
 		as_agent;
 		POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
@@ -667,5 +669,55 @@ for my $BUCKET (@buckets) {
 			"zero byte file should be zero bytes";
 	}
 }
+
+sub sha1 {
+	my ($file) = @_;
+	open my $fh, "<", $file or die "$file: $!\n";
+	my $sha = Digest::SHA1->new;
+	$sha->addfile($fh);
+	close $fh;
+	return $sha->hexdigest;
+}
+
+sub upload {
+	my ($target, $file) = @_;
+	open my $fh, "<", $file or die "$file: $!\n";
+
+	as_control;
+	POST '/control', { kind => 'upload', target => $target };
+	ok $SUCCESS, "starting upload of $file -> $target should succeed"
+		or diag $res->as_string;
+	$TOKEN = $RESPONSE->{token};
+	$id    = $RESPONSE->{id};
+	$CANON = $RESPONSE->{canon};
+
+	as_agent;
+	while (<$fh>) {
+		POST "/blob/$id", {
+			data => encode_base64($_),
+			eof  => $JSON::false,
+		};
+		$SUCCESS or last;
+	}
+	POST "/blob/$id", { eof => $JSON::true };
+	ok $SUCCESS, "closing off the upload of $file -> $target should succeed"
+		or diag $res->as_string;
+}
+
+subtest "fixed-key vault encryption" => sub {
+	my ($a, $b);
+
+	upload 'ssg://cluster1/files/a/first/randomized/key/test', 'main.go';
+	upload 'ssg://cluster1/files/asecond/randomized/key/test', 'main.go';
+	$a = sha1('t/tmp/a/first/randomized/key/test');
+	$b = sha1('t/tmp/asecond/randomized/key/test');
+	isnt $a, $b, 'randomized-key encryption should generate different outputs for identical inputs';
+
+	upload 'ssg://cluster1/special-fixed-key/a/first/fixed/key/test', 'main.go';
+	upload 'ssg://cluster1/special-fixed-key/asecond/fixed/key/test', 'main.go';
+	$a = sha1('t/tmp/a/first/fixed/key/test');
+	$b = sha1('t/tmp/asecond/fixed/key/test');
+	is $a, $b, 'fixed-key encryption should generate identical outputs for identical inputs';
+};
 
 done_testing;

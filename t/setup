@@ -9,6 +9,7 @@ if [[ -z "${SSG_NO_BUILD:-}" ]]; then
   echo "» building SSG API OCI image…"
   docker-compose -p ssg_integration_tests -f t/docker-compose.yml build
 fi
+rm -rf t/tmp/*
 echo "» (re)starting INTEGRATION TEST docker compose infrastructure…"
 docker-compose -p ssg_integration_tests -f t/docker-compose.yml down -v
 docker-compose -p ssg_integration_tests -f t/docker-compose.yml up -d
@@ -20,6 +21,8 @@ while [[ $n != 0 ]]; do
     n=300
     while [[ $n != 0 ]]; do
       if curl --connect-timeout 1 -sf http://127.0.0.1:$PUBLIC_PORT/ >/dev/null; then
+        echo "» generating pbkdf2 fixed key at secret/tests/fixed…"
+        docker exec ssg_integration_tests_vault_1 vault kv put secret/tests/fixed key=`dd 2>/dev/null if=/dev/urandom bs=64 count=1 | xxd -ps -c 200 | tr -d '\n'`
         exit 0
       fi
       sleep 0.1

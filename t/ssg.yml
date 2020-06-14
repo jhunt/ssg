@@ -19,6 +19,22 @@ defaultBucket:
       prefix: secret/tests
 
 buckets:
+  - key: special-fixed-key
+    name: Fixed Key Storage
+    vault:
+      kind: hashicorp
+      fixedKey:
+        enabled: true
+        pbkdf2: fixed:key
+      hashicorp:
+        url: http://vault:8200
+        token: ichaeZeeth5ichi1OhxooSahpoo8wa
+        prefix: secret/tests
+    provider:
+      kind: fs
+      fs:
+        root: /srv/files
+
   - key: files
     name: Files
     provider:
