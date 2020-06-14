@@ -262,6 +262,19 @@ func NewServer(c config.Config) (*Server, error) {
 		if b.Vault == nil {
 			v = vault.Nil
 		} else {
+			v.FixedKey.Enabled = b.Vault.FixedKey.Enabled
+
+			v.FixedKey.PBKDF2 = b.Vault.FixedKey.PBKDF2
+
+			v.FixedKey.Literal.AES128.Key = b.Vault.FixedKey.AES128.Key
+			v.FixedKey.Literal.AES128.IV = b.Vault.FixedKey.AES128.IV
+
+			v.FixedKey.Literal.AES192.Key = b.Vault.FixedKey.AES192.Key
+			v.FixedKey.Literal.AES192.IV = b.Vault.FixedKey.AES192.IV
+
+			v.FixedKey.Literal.AES256.Key = b.Vault.FixedKey.AES256.Key
+			v.FixedKey.Literal.AES256.IV = b.Vault.FixedKey.AES256.IV
+
 			switch b.Vault.Kind {
 			case "hashicorp":
 				log.Infof(LOG+"configuring bucket %v vault backed by hashicorp vault (url=%v, prefix=%v)", b.Key, b.Vault.Hashicorp.URL, b.Vault.Hashicorp.Prefix)
@@ -273,7 +286,7 @@ func NewServer(c config.Config) (*Server, error) {
 				if err != nil {
 					return nil, fmt.Errorf("bucket %v hashicorp vault could not be configured: %s", b.Key, err)
 				}
-				v = candidate
+				v.Provider = candidate
 			}
 		}
 

@@ -6,10 +6,63 @@ import (
 	"github.com/jhunt/ssg/pkg/ssg/provider"
 )
 
-type Vault interface {
-	Set(string, Cipher) error
-	Get(string) (Cipher, error)
+type Vault struct {
+	FixedKey FixedKeySource
+	Provider VaultProvider
+}
+
+type VaultProvider interface {
+	Get(string) ([]byte, error)
+	SetCipher(string, Cipher) error
+	GetCipher(string) (Cipher, error)
 	Delete(string) error
+}
+
+// FixedKeySource represents operator configuration for the
+// source and derivation of a single fixed cipher's static
+// key and initialization vector.
+//
+// We currently support the following methods:
+//
+//    PBKDF2   Password-Based Key Derivation; the operator
+//             points us at a secret *in* the vault, and
+//             we use that as an input to a deterministic
+//             function for deriving key + iv.
+//
+//    Literal  The key and the iv, encoded as fixed-length
+//             hexadecimal values, are to be found in the
+//             vault at fixed locations.  Different paths
+//             (ids) in the vault are used for different
+//             algorithms.
+//
+type FixedKeySource struct {
+	// Enabled turns on fixed key derivation.
+	//
+	Enabled bool
+
+	// PBKDF2 is the id of a secret, stored in the provider
+	// backend vault, from which we will derive encrpytion
+	// parameters.
+	//
+	PBKDF2 string
+
+	// Literal provides paths to algorithm-specific key and
+	// initialization vector values stored in the vault.
+	//
+	Literal struct {
+		AES128 struct {
+			Key string
+			IV  string
+		}
+		AES192 struct {
+			Key string
+			IV  string
+		}
+		AES256 struct {
+			Key string
+			IV  string
+		}
+	}
 }
 
 type EncryptedUploader struct {
@@ -44,16 +97,16 @@ func (e EncryptedUploader) Cancel() error {
 	if err != nil {
 		return err
 	}
-	return e.v.Delete(e.id)
+	return e.v.Provider.Delete(e.id)
 }
 
 func Encrypt(v Vault, id, alg string, up provider.Uploader) (provider.Uploader, error) {
-	c, err := NewCipher(alg)
+	c, err := v.Cipher(alg)
 	if err != nil {
 		return nil, err
 	}
 
-	err = v.Set(id, c)
+	err = v.Provider.SetCipher(id, c)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +146,7 @@ func (d DecryptedDownloader) ReadUncompressed() int64 {
 }
 
 func Decrypt(v Vault, id string, down provider.Downloader) (provider.Downloader, error) {
-	c, err := v.Get(id)
+	c, err := v.Provider.GetCipher(id)
 	if err != nil {
 		return nil, err
 	}

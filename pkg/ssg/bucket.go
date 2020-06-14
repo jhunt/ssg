@@ -57,7 +57,7 @@ func (b *bucket) Expunge(s string) error {
 	log.Debugf(LOG+"expunging %s from bucket", s)
 	if b.encryption != "none" {
 		log.Debugf(LOG+"blobs in bucket %v are encrypted; removing cipher parameters from vault", b.key)
-		if err := b.vault.Delete(s); err != nil {
+		if err := b.vault.Provider.Delete(s); err != nil {
 			return err
 		}
 	}

@@ -5,6 +5,23 @@ package config
 // of the storage gateway.
 //
 type Vault struct {
+	FixedKey struct {
+		Enabled bool   `yaml:"enabled"`
+		PBKDF2  string `yaml:"pbkdf2"`
+		AES128  struct {
+			Key string `yaml:"key"`
+			IV  string `yaml:"iv"`
+		} `yaml:"aes128"`
+		AES192 struct {
+			Key string `yaml:"key"`
+			IV  string `yaml:"iv"`
+		} `yaml:"aes192"`
+		AES256 struct {
+			Key string `yaml:"key"`
+			IV  string `yaml:"iv"`
+		} `yaml:"aes256"`
+	} `yaml:"fixedKey"`
+
 	// Kind identifies what type of secure storage
 	// system this configuration represents.
 	//
