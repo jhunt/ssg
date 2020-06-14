@@ -1,10 +1,10 @@
 package gcs
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/storage/v1"
 
@@ -30,7 +30,7 @@ func Configure(e Endpoint) (Provider, error) {
 	var c *http.Client
 
 	scope := storage.DevstorageFullControlScope
-	ctx := oauth2.NoContext
+	ctx := context.Background()
 	if e.Key != nil {
 		b, err := json.Marshal(j2y(e.Key))
 		if err != nil {
