@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 
 	"golang.org/x/crypto/pbkdf2"
@@ -113,4 +114,32 @@ func (v Vault) Cipher(alg string) (Cipher, error) {
 	}
 
 	return Cipher{}, fmt.Errorf("unable to derive %s fixed cipher: no methods left to try", algorithm)
+}
+
+func deriveLiteral(v Vault, keyp string, keysz int, ivp string, ivsz int) ([]byte, []byte, error) {
+	encoded, err := v.Provider.Get(keyp)
+	if err != nil {
+		return nil, nil, err
+	}
+	key, err := hex.DecodeString(string(encoded))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	encoded, err = v.Provider.Get(ivp)
+	if err != nil {
+		return nil, nil, err
+	}
+	iv, err := hex.DecodeString(string(encoded))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(key) != keysz {
+		return nil, nil, fmt.Errorf("insufficient key size (%d bytes): want exactly %d bytes", len(key), keysz)
+	}
+	if len(iv) != ivsz {
+		return nil, nil, fmt.Errorf("insufficient initialization vector size (%d bytes): want exactly %d bytes", len(key), ivsz)
+	}
+	return key, iv, nil
 }
