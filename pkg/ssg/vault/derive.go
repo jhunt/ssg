@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 
 	"golang.org/x/crypto/pbkdf2"
@@ -117,20 +116,12 @@ func (v Vault) Cipher(alg string) (Cipher, error) {
 }
 
 func deriveLiteral(v Vault, keyp string, keysz int, ivp string, ivsz int) ([]byte, []byte, error) {
-	encoded, err := v.Provider.Get(keyp)
-	if err != nil {
-		return nil, nil, err
-	}
-	key, err := hex.DecodeString(string(encoded))
+	key, err := v.Provider.Get(keyp)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	encoded, err = v.Provider.Get(ivp)
-	if err != nil {
-		return nil, nil, err
-	}
-	iv, err := hex.DecodeString(string(encoded))
+	iv, err := v.Provider.Get(ivp)
 	if err != nil {
 		return nil, nil, err
 	}
