@@ -22,7 +22,11 @@ while [[ $n != 0 ]]; do
     while [[ $n != 0 ]]; do
       if curl --connect-timeout 1 -sf http://127.0.0.1:$PUBLIC_PORT/ >/dev/null; then
         echo "» generating pbkdf2 fixed key at secret/tests/fixed…"
-        docker exec ssg_integration_tests_vault_1 vault kv put secret/tests/fixed key=`dd 2>/dev/null if=/dev/urandom bs=64 count=1 | xxd -ps -c 200 | tr -d '\n'`
+        docker exec ssg_integration_tests_vault_1 vault kv put secret/tests/fixed \
+          key=`dd 2>/dev/null if=/dev/urandom bs=64 count=1 | xxd -ps -c 200 | tr -d '\n'`
+        docker exec ssg_integration_tests_vault_1 vault kv put secret/tests/a/random/aes256 \
+          key=`dd 2>/dev/null if=/dev/urandom bs=32 count=1 | xxd -ps -c 200 | tee rand.key | tr -d '\n'` \
+          iv=`dd  2>/dev/null if=/dev/urandom bs=16 count=1 | xxd -ps -c 200 | tr -d '\n'`
         exit 0
       fi
       sleep 0.1

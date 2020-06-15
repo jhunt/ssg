@@ -69,13 +69,13 @@ func (v Vault) Get(id string) ([]byte, error) {
 	}
 
 	log.Debugf(LOG+"retrieving raw secret path=%v, key=%v", filepath.Join(v.prefix, id), key)
-	in := make(map[string][]byte)
+	in := make(map[string]string)
 	_, err := v.kv.Get(filepath.Join(v.prefix, id), &in, nil)
 	if err != nil {
 		return nil, err
 	}
 	if v, ok := in[key]; ok {
-		return v, nil
+		return hex.DecodeString(v)
 	}
 	return nil, fmt.Errorf("key %v not found in path %v", key, id)
 }

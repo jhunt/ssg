@@ -35,6 +35,25 @@ buckets:
       fs:
         root: /srv/files
 
+  - key: special-provided-key
+    name: Fixed Key Storage (Provided)
+    description: Where the Key and IV are provided
+    vault:
+      kind: hashicorp
+      fixedKey:
+        enabled: true
+        aes256:
+          key: a/random/aes256:key
+          iv:  a/random/aes256:iv
+      hashicorp:
+        url: http://vault:8200
+        token: ichaeZeeth5ichi1OhxooSahpoo8wa
+        prefix: secret/tests
+    provider:
+      kind: fs
+      fs:
+        root: /srv/files
+
   - key: files
     name: Files
     provider:

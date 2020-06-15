@@ -718,6 +718,12 @@ subtest "fixed-key vault encryption" => sub {
 	$a = sha1('t/tmp/a/first/fixed/key/test');
 	$b = sha1('t/tmp/asecond/fixed/key/test');
 	is $a, $b, 'fixed-key encryption should generate identical outputs for identical inputs';
+
+	upload 'ssg://cluster1/special-provided-key/a/first/provided/key/test', 'main.go';
+	upload 'ssg://cluster1/special-provided-key/asecond/provided/key/test', 'main.go';
+	$a = sha1('t/tmp/a/first/provided/key/test');
+	$b = sha1('t/tmp/asecond/provided/key/test');
+	is $a, $b, 'fixed-key encryption can take a key/iv, rather than deriving it';
 };
 
 done_testing;
