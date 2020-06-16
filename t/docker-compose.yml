@@ -67,5 +67,7 @@ services:
     volumes:
       - $PWD/t/ssg.yml:/etc/ssg/ssg.yml
       - $PWD/t/tmp:/srv/files
+    tmpfs:
+      - /srv/x-files
     command:
       - server

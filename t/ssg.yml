@@ -19,7 +19,47 @@ defaultBucket:
       prefix: secret/tests
 
 buckets:
-  - key: special-fixed-key
+  - key: base-files
+    name: Files
+    provider:
+      kind: fs
+      fs:
+        root: /srv/files
+
+  - key: base-minio
+    name: Minio (S3)
+    description: An S3-workalike that puts files in the root of a bucket
+    provider:
+      kind: s3
+      s3:
+        url:     http://minio:9000
+        region:  us-east-1
+        bucket:  ssg-testing
+        usePath: true
+        accessKeyID:     AKI0f0f0f0f0f0f
+        secretAccessKey: NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+
+  - key: base-minio-with-prefix
+    name: Minio (S3 /prefix)
+    provider:
+      kind: s3
+      s3:
+        url:     http://minio:9000
+        region:  us-east-1
+        bucket:  ssg-testing
+        prefix:  back/ups/
+        usePath: true
+        accessKeyID:     AKI0f0f0f0f0f0f
+        secretAccessKey: NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+
+  - key: base-webdav
+    name: WebDAV
+    provider:
+      kind: webdav
+      webdav:
+        url: http://webdav:80
+
+  - key: fixed-key
     name: Fixed Key Storage
     vault:
       kind: hashicorp
@@ -35,7 +75,7 @@ buckets:
       fs:
         root: /srv/files
 
-  - key: special-provided-key
+  - key: provided-key
     name: Fixed Key Storage (Provided)
     description: Where the Key and IV are provided
     vault:
@@ -54,42 +94,74 @@ buckets:
       fs:
         root: /srv/files
 
-  - key: files
-    name: Files
-    provider:
+  - key: x-zlib-with-aes256-ctr
+    name: zlib / aes256-ctr
+    compression: zlib
+    encryption:  aes256-ctr
+    vault: &x-vault
+      kind: hashicorp
+      hashicorp:
+        url: http://vault:8200
+        token: ichaeZeeth5ichi1OhxooSahpoo8wa
+        prefix: secret/x-tests
+    provider: &x-provider
       kind: fs
       fs:
-        root: /srv/files
+        root: /srv/x-files
 
-  - key: minio
-    name: Minio (S3)
-    description: An S3-workalike that puts files in the root of a bucket
-    provider:
-      kind: s3
-      s3:
-        url:     http://minio:9000
-        region:  us-east-1
-        bucket:  ssg-testing
-        usePath: true
-        accessKeyID:     AKI0f0f0f0f0f0f
-        secretAccessKey: NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+  - key: x-zlib-with-aes256-cfb
+    name: zlib / aes256-cfb
+    compression: zlib
+    encryption:  aes256-cfb
+    vault: *x-vault
+    provider: *x-provider
 
-  - key: minio-with-prefix
-    name: Minio (S3 /prefix)
-    provider:
-      kind: s3
-      s3:
-        url:     http://minio:9000
-        region:  us-east-1
-        bucket:  ssg-testing
-        prefix:  back/ups/
-        usePath: true
-        accessKeyID:     AKI0f0f0f0f0f0f
-        secretAccessKey: NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+  - key: x-zlib-with-aes256-ofb
+    name: zlib / aes256-ofb
+    compression: zlib
+    encryption:  aes256-ofb
+    vault: *x-vault
+    provider: *x-provider
 
-  - key: webdav
-    name: WebDAV
-    provider:
-      kind: webdav
-      webdav:
-        url: http://webdav:80
+  - key: x-zlib-with-aes192-ctr
+    name: zlib / aes192-ctr
+    compression: zlib
+    encryption:  aes192-ctr
+    vault: *x-vault
+    provider: *x-provider
+
+  - key: x-zlib-with-aes192-cfb
+    name: zlib / aes192-cfb
+    compression: zlib
+    encryption:  aes192-cfb
+    vault: *x-vault
+    provider: *x-provider
+
+  - key: x-zlib-with-aes192-ofb
+    name: zlib / aes192-ofb
+    compression: zlib
+    encryption:  aes192-ofb
+    vault: *x-vault
+    provider: *x-provider
+
+  - key: x-zlib-with-aes128-ctr
+    name: zlib / aes128-ctr
+    compression: zlib
+    encryption:  aes128-ctr
+    vault: *x-vault
+    provider: *x-provider
+
+  - key: x-zlib-with-aes128-cfb
+    name: zlib / aes128-cfb
+    compression: zlib
+    encryption:  aes128-cfb
+    vault: *x-vault
+    provider: *x-provider
+
+  - key: x-zlib-with-aes128-ofb
+    name: zlib / aes128-ofb
+    compression: zlib
+    encryption:  aes128-ofb
+    vault: *x-vault
+    provider: *x-provider
+

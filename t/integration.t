@@ -111,30 +111,30 @@ as_control;
 GET '/buckets';
 ok $SUCCESS, "attempting to list buckets as the control user should succeed"
 	or diag $res->as_string;
-cmp_deeply([grep { $_->{key} !~ m/^special-/ } @$RESPONSE], [
+cmp_deeply([grep { $_->{key} =~ m/^base-/ } @$RESPONSE], [
 	{
-		key => 'files',
+		key => 'base-files',
 		name => 'Files',
 		description => '',
 		compression => 'zlib',
 		encryption => 'aes256-ctr',
 	},
 	{
-		key => 'minio',
+		key => 'base-minio',
 		name => 'Minio (S3)',
 		description => 'An S3-workalike that puts files in the root of a bucket',
 		compression => 'zlib',
 		encryption => 'aes256-ctr',
 	},
 	{
-		key => 'minio-with-prefix',
+		key => 'base-minio-with-prefix',
 		name => 'Minio (S3 /prefix)',
 		description => '',
 		compression => 'zlib',
 		encryption => 'aes256-ctr',
 	},
 	{
-		key => 'webdav',
+		key => 'base-webdav',
 		name => 'WebDAV',
 		description => '',
 		compression => 'zlib',
@@ -143,9 +143,9 @@ cmp_deeply([grep { $_->{key} !~ m/^special-/ } @$RESPONSE], [
 ], "/buckets should list only pertinent bucket info, in defined order");
 
 my @buckets = map { $_->{key} } @$RESPONSE;
-for my $BUCKET (grep { ! m/^special-/ } @buckets) {
+for my $BUCKET (grep { m/^base-/ } @buckets) {
 	last if $ENV{SKIP_PROVIDER_TESTS};
-	subtest "$BUCKET bucket" => sub {
+	subtest "$BUCKET bucket" => sub { # {{{
 		as_agent;
 		POST '/control', { kind => 'upload', target => "ssg://cluster1/$BUCKET" };
 		ok !$SUCCESS, "attempting to create an upload as the agent should fail"
@@ -320,9 +320,9 @@ for my $BUCKET (grep { ! m/^special-/ } @buckets) {
 		}
 
 		ok  -f local_fs_path(), "file should be in file storage"
-			if $BUCKET eq 'files';
+			if $BUCKET eq 'base-files';
 		is -s local_fs_path(), $RESPONSE->{compressed}, "file should be \$compressed bytes long"
-			if $BUCKET eq 'files';
+			if $BUCKET eq 'base-files';
 		isnt $RESPONSE->{uncompressed}, $RESPONSE->{compressed}, "uncompressed data should be a different size than compressed";
 
 		as_monitor;
@@ -477,12 +477,12 @@ for my $BUCKET (grep { ! m/^special-/ } @buckets) {
 
 		as_control;
 		ok  -f local_fs_path(), "file should still be in file storage"
-			if $BUCKET eq 'files';
+			if $BUCKET eq 'base-files';
 		POST "/control", { kind => 'expunge', target => $CANON };
 		ok $SUCCESS, "should be able to expunge the blob"
 			or diag $res->as_string;
 		ok !-f local_fs_path(), "file should not still be in file storage"
-			if $BUCKET eq 'files';
+			if $BUCKET eq 'base-files';
 
 		system("./t/vault check '".vault_secret()."'");
 		ok $? != 0, 'should no longer have encryption cipher in the vault';
@@ -667,7 +667,7 @@ for my $BUCKET (grep { ! m/^special-/ } @buckets) {
 			"zero byte file should be empty";
 		is length($res->decoded_content), 0,
 			"zero byte file should be zero bytes";
-	}
+	} # }}}
 }
 
 sub sha1 {
@@ -704,26 +704,68 @@ sub upload {
 		or diag $res->as_string;
 }
 
-subtest "fixed-key vault encryption" => sub {
+sub download {
+	my ($target) = @_;
+
+	as_control;
+	POST '/control', { kind => 'download', target => $target };
+	ok $SUCCESS, "starting download of $target should succeed"
+		or diag $res->as_string;
+	$TOKEN = $RESPONSE->{token};
+	$id    = $RESPONSE->{id};
+	$CANON = $RESPONSE->{canon};
+
+	as_agent;
+	GET "/blob/$id";
+	ok $SUCCESS, "download of $target should succeed"
+		or diag $res->as_string;
+
+	my $sha = Digest::SHA1->new;
+	$sha->add($res->decoded_content);
+	return $sha->hexdigest;
+}
+
+subtest "fixed-key vault encryption" => sub { # {{{
 	my ($a, $b);
 
-	upload 'ssg://cluster1/files/a/first/randomized/key/test', 'main.go';
-	upload 'ssg://cluster1/files/asecond/randomized/key/test', 'main.go';
+	upload 'ssg://cluster1/base-files/a/first/randomized/key/test', 'main.go';
+	upload 'ssg://cluster1/base-files/asecond/randomized/key/test', 'main.go';
 	$a = sha1('t/tmp/a/first/randomized/key/test');
 	$b = sha1('t/tmp/asecond/randomized/key/test');
 	isnt $a, $b, 'randomized-key encryption should generate different outputs for identical inputs';
 
-	upload 'ssg://cluster1/special-fixed-key/a/first/fixed/key/test', 'main.go';
-	upload 'ssg://cluster1/special-fixed-key/asecond/fixed/key/test', 'main.go';
+	upload 'ssg://cluster1/fixed-key/a/first/fixed/key/test', 'main.go';
+	upload 'ssg://cluster1/fixed-key/asecond/fixed/key/test', 'main.go';
 	$a = sha1('t/tmp/a/first/fixed/key/test');
 	$b = sha1('t/tmp/asecond/fixed/key/test');
 	is $a, $b, 'fixed-key encryption should generate identical outputs for identical inputs';
 
-	upload 'ssg://cluster1/special-provided-key/a/first/provided/key/test', 'main.go';
-	upload 'ssg://cluster1/special-provided-key/asecond/provided/key/test', 'main.go';
+	upload 'ssg://cluster1/provided-key/a/first/provided/key/test', 'main.go';
+	upload 'ssg://cluster1/provided-key/asecond/provided/key/test', 'main.go';
 	$a = sha1('t/tmp/a/first/provided/key/test');
 	$b = sha1('t/tmp/asecond/provided/key/test');
 	is $a, $b, 'fixed-key encryption can take a key/iv, rather than deriving it';
 };
+# }}}
 
+my @COMPRESS = qw(zlib);
+my @ENCRYPT = qw(
+	aes128-ctr aes128-cfb aes128-ofb
+	aes192-ctr aes192-cfb aes192-ofb
+	aes256-ctr aes256-cfb aes256-ofb
+);
+
+my $a = sha1('main.go');
+for my $c (@COMPRESS) {
+	for my $e (@ENCRYPT) {
+		upload "ssg://cluster1/x-$c-with-$e/test-$c-with-$e", 'main.go';
+
+		for my $oc (@COMPRESS) {
+			for my $oe (@ENCRYPT) {
+				my $b = download "ssg://cluster1/x-$oc-with-$oe/test-$c-with-$e";
+				is $a, $b, "upload through $c / $e should equal download through $oe / $oc";
+			}
+		}
+	}
+}
 done_testing;
