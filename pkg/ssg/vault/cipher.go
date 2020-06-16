@@ -25,7 +25,7 @@ func parse(in string) (string, string) {
 func (c Cipher) stream() (cipher.Stream, cipher.Stream, error) {
 	algo, mode := parse(c.Algorithm)
 	switch algo {
-	case "ases128", "aes192", "aes256":
+	case "aes128", "aes192", "aes256":
 		block, err := aes.NewCipher(c.Key)
 		if err != nil {
 			return nil, nil, err
