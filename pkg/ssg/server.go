@@ -140,11 +140,10 @@ func (s *Server) expunge(where *url.URL) error {
 }
 
 func (s *Server) Run(helo string) error {
-	http.Handle("/", s.Router(helo))
 	go s.Sweep()
 
 	log.Infof(LOG+"http server starting up on %s", s.Bind)
-	if err := http.ListenAndServe(s.Bind, nil); err != nil {
+	if err := http.ListenAndServe(s.Bind, s.Router(helo)); err != nil {
 		return err
 	}
 	log.Infof(LOG + "http server shutting down")
