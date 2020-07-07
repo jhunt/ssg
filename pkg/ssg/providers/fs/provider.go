@@ -85,5 +85,4 @@ func (f Provider) Download(relpath string) (provider.Downloader, error) {
 
 func (f Provider) Expunge(relpath string) error {
 	return os.Remove(filepath.Join(f.Root, filepath.Clean(relpath)))
-	return nil
 }
