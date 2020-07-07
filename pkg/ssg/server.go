@@ -158,6 +158,14 @@ func NewServerFromFile(path string) (*Server, error) {
 	return NewServer(cfg)
 }
 
+func NewServerFromString(yaml string) (*Server, error) {
+	cfg, err := config.Read([]byte(yaml))
+	if err != nil {
+		return nil, err
+	}
+	return NewServer(cfg)
+}
+
 func NewServer(c config.Config) (*Server, error) {
 	var s Server
 	s.uploads = make(map[string]*stream)
