@@ -15,6 +15,7 @@ import (
 	"github.com/jhunt/ssg/pkg/ssg/provider"
 	"github.com/jhunt/ssg/pkg/ssg/providers/fs"
 	"github.com/jhunt/ssg/pkg/ssg/providers/gcs"
+	"github.com/jhunt/ssg/pkg/ssg/providers/mem"
 	"github.com/jhunt/ssg/pkg/ssg/providers/s3"
 	"github.com/jhunt/ssg/pkg/ssg/providers/webdav"
 
@@ -198,6 +199,14 @@ func NewServer(c config.Config) (*Server, error) {
 	for i, b := range c.Buckets {
 		var p provider.Provider
 		switch b.Provider.Kind {
+		case "mem":
+			log.Infof(LOG+"configuring bucket %v backed by memory", b.Key)
+			candidate, err := mem.Configure()
+			if err != nil {
+				return nil, fmt.Errorf("mem bucket %v could not be configured: %s", b.Key, err)
+			}
+			p = candidate
+
 		case "fs":
 			log.Infof(LOG+"configuring bucket %v backed by fs (root=%v)", b.Key, b.Provider.FS.Root)
 			candidate, err := fs.Configure(b.Provider.FS.Root)
