@@ -85,7 +85,7 @@ func main() {
 	if Version == "" || Version == "dev" {
 		vers = "ssg (development)"
 	} else {
-		vers = fmt.Sprintf("ssg v%s")
+		vers = fmt.Sprintf("ssg v%s", Version)
 	}
 	if opts.Version {
 		fmt.Printf("%s\n", vers)
