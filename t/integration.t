@@ -642,31 +642,8 @@ for my $BUCKET (grep { m/^base-/ } @buckets) {
 			data => encode_base64(""),
 			eof  => $JSON::true,
 		};
-		ok $SUCCESS, "posting zero bytes to the upload stream (as the agent) should succeed"
+		ok !$SUCCESS, "posting zero bytes to the upload stream (as the agent) should fail"
 			or diag $res->as_string;
-		cmp_deeply($RESPONSE, {
-			segments     => 0,
-			compressed   => ignore(),
-			uncompressed => 0,
-			sent         => 0,
-		}, "posting zero bytes should be ok");
-
-		as_control;
-		POST '/control', { kind => 'download', target => $CANON };
-		ok $SUCCESS, "starting the zero byte download should succeed"
-			or diag $res->as_string;
-		$TOKEN = $RESPONSE->{token};
-		$id    = $RESPONSE->{id};
-		$CANON = $RESPONSE->{canon};
-
-		as_agent;
-		GET "/blob/$id";
-		ok $SUCCESS, "downloading the zero-byte file should succeed"
-			or diag $res->as_string;
-		is $res->decoded_content, "",
-			"zero byte file should be empty";
-		is length($res->decoded_content), 0,
-			"zero byte file should be zero bytes";
 	} # }}}
 }
 

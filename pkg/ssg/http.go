@@ -191,8 +191,16 @@ func (s *Server) Router(helo string) *route.Router {
 
 		if in.EOF {
 			log.Debugf(LOG+"EOF signaled by client; closing upload stream %v", upstream.id)
-			upstream.Close()
-			s.forget(upstream)
+			defer s.forget(upstream)
+
+			if upstream.uncompressed.total() == 0 {
+				upstream.Cancel()
+				r.Fail(route.Bad(nil, "zero-byte file detected"))
+				return
+
+			} else {
+				upstream.Close()
+			}
 		}
 
 		r.OK(struct {

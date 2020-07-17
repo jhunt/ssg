@@ -91,3 +91,15 @@ func (s *stream) Close() error {
 
 	return nil
 }
+
+func (s *stream) Cancel() error {
+	if s.writer != nil {
+		return s.writer.Cancel()
+	}
+
+	if s.reader != nil {
+		return s.reader.Close()
+	}
+
+	return nil
+}
