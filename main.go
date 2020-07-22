@@ -48,12 +48,15 @@ func main() {
 			Put struct{} `cli:"put"`
 		} `cli:"stream, s"`
 
-		Upload   struct{} `cli:"upload, up"`
+		Upload   struct{
+			SegmentSize int `cli:"-s, --segment-size"`
+		} `cli:"upload, up"`
 		Download struct{} `cli:"download, down"`
 	}
 
 	opts.Log = "info"
 	opts.Server.Config = "/etc/ssg/ssg.yml"
+	opts.Upload.SegmentSize = 1024 * 1024
 	env.Override(&opts)
 	command, args, err := cli.Parse(&opts)
 	if err != nil {
@@ -244,6 +247,7 @@ func main() {
 
 	if command == "upload" {
 		c := controller(opts.URL, opts.Token, "SSG_CONTROL_TOKEN")
+		c.SegmentSize = opts.Upload.SegmentSize
 		target := needTarget(args, "REMOTE-PATH")
 
 		stream, err := c.NewUpload(target)

@@ -38,11 +38,15 @@ type Bucket struct {
 type Client struct {
 	URL          string
 	ControlToken string
+	SegmentSize  int
 
 	Client *http.Client
 }
 
 func (c *Client) init() {
+	if c.SegmentSize == 0 {
+		c.SegmentSize = 1024 * 1024 // 1MiB
+	}
 	if c.Client == nil {
 		c.Client = &http.Client{}
 	}
@@ -216,10 +220,13 @@ func (c *Client) Expunge(target string) error {
 }
 
 func (c *Client) Put(id, token string, in io.Reader, eof bool) (int64, error) {
+	c.init()
+
 	var size int64
 
 	scan := bufio.NewScanner(in)
-	scan.Split(splitInto(8192))
+	scan.Buffer(make([]byte, c.SegmentSize), c.SegmentSize)
+	scan.Split(splitInto(c.SegmentSize))
 
 	for scan.Scan() {
 		n, err := c.agent(id, token, scan.Bytes(), false)
