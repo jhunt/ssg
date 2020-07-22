@@ -14,26 +14,42 @@ type Uploader struct {
 }
 
 func (out *Uploader) Write(b []byte) (int, error) {
+	// calculate the amount of space left in our send buffer.
 	left := len(out.buf) - out.bufn
+
 	nwrit := 0
 	for len(b) >= left {
+		// fill up our send buffer, so that we get a complete
+		// multi-part of the correct segment size.
 		copy(out.buf[out.bufn:], b[:left])
-		b = b[left:]
 
+		// write our full multi-part to the backend s3 store.
 		if err := out.up.Write(out.buf); err != nil {
 			return nwrit, err
 		}
 
-		out.n += int64(nwrit)
-		nwrit += len(out.buf)
+		// track the new data we wrote directly.
+		nwrit += left
+
+		// slide our input buffer back to account for the
+		// direct write.
+		b = b[left:]
+
+		// our send buffer is now empty, ready to be re-filled.
 		left = len(out.buf)
 		out.bufn = 0
 	}
 
+	// place the leftover input data into our send buffer
+	// for a future call to Write() or Close().
 	copy(out.buf[out.bufn:], b)
 	out.bufn += len(b)
-	nwrit += len(b)
 
+	// record the send-buffered remainder of the input buffer
+	// as having been written (return its byte counts) since
+	// the send buffer cache is "invisible" to callers.
+	nwrit += len(b)
+	out.n += int64(nwrit)
 	return nwrit, nil
 }
 
