@@ -236,8 +236,9 @@ func main() {
 		n, err := c.Put(target, token, os.Stdin, true)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "!! @R{%s}\n", err)
+		} else {
+			fmt.Fprintf(os.Stderr, "uploaded %d bytes\n", n)
 		}
-		fmt.Fprintf(os.Stderr, "uploaded %d bytes\n", n)
 		os.Exit(0)
 	}
 
@@ -255,8 +256,9 @@ func main() {
 		n, err := c.Put(stream.ID, stream.Token, os.Stdin, true)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "!! @R{%s}\n", err)
+		} else {
+			fmt.Fprintf(os.Stderr, "uploaded %d bytes\n", n)
 		}
-		fmt.Fprintf(os.Stderr, "uploaded %d bytes\n", n)
 		os.Exit(0)
 	}
 
