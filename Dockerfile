@@ -5,7 +5,6 @@ RUN apt-get update \
 
 FROM golang:1.13 AS build
 
-ARG VERSION
 WORKDIR /app
 COPY go.mod .
 COPY go.sum .
@@ -13,6 +12,7 @@ RUN go mod download
 
 COPY . .
 ENV CGO_ENABLED=0
+ARG VERSION
 RUN go build -o ssg -ldflags "-X main.Version=$VERSION" .
 
 FROM scratch
