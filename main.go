@@ -20,13 +20,12 @@ var Version = ""
 
 func main() {
 	var opts struct {
-		Help    bool `cli:"-h, --help"`
-		Version bool `cli:"-v, --version"`
+		Help    bool   `cli:"-h, --help"`
+		Version bool   `cli:"-v, --version"`
+		Debug   bool   `cli:"-D, --debug"     env:"SSG_DEBUG"`
+		Log     string `cli:"-L, --log-level" env:"SSG_LOG_LEVEL"`
 
 		Server struct {
-			Debug bool   `cli:"-D, --debug"     env:"SSG_DEBUG"`
-			Log   string `cli:"-L, --log-level" env:"SSG_LOG_LEVEL"`
-
 			Config string `cli:"-c, --config" env:"SSG_CONFIG"`
 		} `cli:"server"`
 
@@ -53,7 +52,7 @@ func main() {
 		Download struct{} `cli:"download, down"`
 	}
 
-	opts.Server.Log = "info"
+	opts.Log = "info"
 	opts.Server.Config = "/etc/ssg/ssg.yml"
 	env.Override(&opts)
 	command, args, err := cli.Parse(&opts)
@@ -92,6 +91,14 @@ func main() {
 		os.Exit(0)
 	}
 
+	if opts.Debug {
+		opts.Log = "debug"
+	}
+	log.SetupLogging(log.LogConfig{
+		Type:  "console",
+		Level: opts.Log,
+	})
+
 	if command == "server" {
 		if opts.URL != "" {
 			fmt.Fprintf(os.Stderr, "!! @W{warning:} the --url flag is ignored in server mode.\n")
@@ -104,13 +111,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "!!! extra arguments found\n")
 			os.Exit(1)
 		}
-		if opts.Server.Debug {
-			opts.Server.Log = "debug"
-		}
-		log.SetupLogging(log.LogConfig{
-			Type:  "console",
-			Level: opts.Server.Log,
-		})
 
 		s, err := ssg.NewServerFromFile(opts.Server.Config)
 		if err != nil {
