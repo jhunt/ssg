@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+	"regexp"
 
 	"gopkg.in/yaml.v2"
 )
@@ -17,7 +19,46 @@ func ReadFile(path string) (Config, error) {
 
 func Read(raw []byte) (Config, error) {
 	var c Config
-	if err := yaml.Unmarshal(raw, &c); err != nil {
+
+	var pre map[interface{}]interface{}
+	if err := yaml.Unmarshal(raw, &pre); err != nil {
+		return c, fmt.Errorf("failed to parse yaml: %s", err)
+	}
+
+	re := regexp.MustCompile(`\${.+?}`)
+	var envify func(interface{}) interface{}
+	envify = func(thing interface{}) interface{} {
+		switch thing.(type) {
+		case map[interface{}]interface{}:
+			v := thing.(map[interface{}]interface{})
+			for k := range v {
+				v[k] = envify(v[k])
+			}
+			return v
+
+		case []interface{}:
+			v := thing.([]interface{})
+			for i := range v {
+				v[i] = envify(v[i])
+			}
+			return v
+
+		case string:
+			v := thing.(string)
+			return re.ReplaceAllStringFunc(v, func(in string) string {
+				return os.Getenv(in[2 : len(in)-1])
+			})
+		}
+		return thing
+	}
+	thing := envify(pre)
+	b, err := yaml.Marshal(thing)
+	if err != nil {
+		return c, fmt.Errorf("failed to resolve environment variables in yaml (internal error): %s", err)
+	}
+
+	if err := yaml.Unmarshal(b, &c); err != nil {
+		var c Config
 		return c, fmt.Errorf("failed to parse yaml: %s", err)
 	}
 

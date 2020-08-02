@@ -8,7 +8,7 @@ import (
 )
 
 var _ = Describe("Configuration", func() {
-	Describe("Parsing", func() {
+	Describe("Validation", func() {
 		It("should read a valid, explicit configuration", func() {
 			c, err := config.Read([]byte(`---
 cluster: test
