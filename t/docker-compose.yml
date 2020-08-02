@@ -64,6 +64,12 @@ services:
     environment:
       - SSG_LOG_LEVEL=debug
       - SSG_CONFIG=/etc/ssg/ssg.yml
+      - MINIO_AKI=AKI0f0f0f0f0f0f
+      - MINIO_KEY=NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+      - VAULT_TOKEN=ichaeZeeth5ichi1OhxooSahpoo8wa
+      - SSG_CONTROL_TOKEN=test-control-token-apqlwoskeij
+      - SSG_ADMIN_TOKEN=test-admin-token-ghtyyfjkrudke
+      - SSG_MONITOR_TOKEN=test-monitor-token-jjqwhrexck1
     volumes:
       - $PWD/t/ssg.yml:/etc/ssg/ssg.yml
       - $PWD/t/tmp:/srv/files

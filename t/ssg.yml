@@ -4,10 +4,10 @@ bind: ':8080'
 maxLease: 3
 sweepInterval: 1
 controlTokens:
-  - 'test-control-token-apqlwoskeij'
-  - 'test-admin-token-ghtyyfjkrudke'
+  - ${SSG_CONTROL_TOKEN}
+  - ${SSG_ADMIN_TOKEN}
 monitorTokens:
-  - 'test-monitor-token-jjqwhrexck1'
+  - ${SSG_MONITOR_TOKEN}
 defaultBucket:
   compression: zlib
   encryption: aes256-ctr
@@ -15,7 +15,7 @@ defaultBucket:
     kind: hashicorp
     hashicorp:
       url: http://vault:8200
-      token: ichaeZeeth5ichi1OhxooSahpoo8wa
+      token: ${VAULT_TOKEN}
       prefix: secret/tests
 
 buckets:
@@ -36,8 +36,8 @@ buckets:
         region:  us-east-1
         bucket:  ssg-testing
         usePath: true
-        accessKeyID:     AKI0f0f0f0f0f0f
-        secretAccessKey: NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+        accessKeyID:     ${MINIO_AKI}
+        secretAccessKey: ${MINIO_KEY}
 
   - key: base-minio-with-prefix
     name: Minio (S3 /prefix)
@@ -49,8 +49,8 @@ buckets:
         bucket:  ssg-testing
         prefix:  back/ups/
         usePath: true
-        accessKeyID:     AKI0f0f0f0f0f0f
-        secretAccessKey: NuKKHor2uHOINUQjy8s+H377pjt3slRs+hc
+        accessKeyID:     ${MINIO_AKI}
+        secretAccessKey: ${MINIO_KEY}
 
   - key: base-webdav
     name: WebDAV
@@ -68,7 +68,7 @@ buckets:
         pbkdf2: fixed:key
       hashicorp:
         url: http://vault:8200
-        token: ichaeZeeth5ichi1OhxooSahpoo8wa
+        token: ${VAULT_TOKEN}
         prefix: secret/tests
     provider:
       kind: fs
@@ -87,7 +87,7 @@ buckets:
           iv:  a/random/aes256:iv
       hashicorp:
         url: http://vault:8200
-        token: ichaeZeeth5ichi1OhxooSahpoo8wa
+        token: ${VAULT_TOKEN}
         prefix: secret/tests
     provider:
       kind: fs
@@ -102,7 +102,7 @@ buckets:
       kind: hashicorp
       hashicorp:
         url: http://vault:8200
-        token: ichaeZeeth5ichi1OhxooSahpoo8wa
+        token: ${VAULT_TOKEN}
         prefix: secret/x-tests
     provider: &x-provider
       kind: fs
