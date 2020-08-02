@@ -48,7 +48,7 @@ func main() {
 			Put struct{} `cli:"put"`
 		} `cli:"stream, s"`
 
-		Upload   struct{
+		Upload struct {
 			SegmentSize int `cli:"-s, --segment-size"`
 		} `cli:"upload, up"`
 		Download struct{} `cli:"download, down"`
