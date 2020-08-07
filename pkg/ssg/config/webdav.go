@@ -40,6 +40,12 @@ type WebDAV struct {
 	// normal operation.
 	//
 	CA CA `yaml:"ca"`
+
+	// Timeout determines how long HTTP requests can take to
+	// connect, issue the request, and read the full response
+	// body before they are forcibly disconnected.
+	//
+	Timeout int `yaml:"timeout"`
 }
 
 func (webdav *WebDAV) validate() error {
@@ -60,6 +66,10 @@ func (webdav *WebDAV) validate() error {
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return fmt.Errorf("webdav url '%s' is malformed", webdav.URL)
+	}
+
+	if webdav.Timeout < 0 {
+		return fmt.Errorf("webdav timeout '%d' is negative", webdav.Timeout)
 	}
 
 	return nil

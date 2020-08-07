@@ -84,5 +84,11 @@ type Vault struct {
 		// by the Vault instance during normal operation.
 		//
 		CA CA `yaml:"ca"`
+
+		// Timeout determines how long HTTP requests can take to
+		// connect, issue the request, and read the full response
+		// body before they are forcibly disconnected.
+		//
+		Timeout int `yaml:"timeout"`
 	} `yaml:"hashicorp"`
 }

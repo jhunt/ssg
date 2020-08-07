@@ -3,14 +3,17 @@ package hashicorp
 import (
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jhunt/go-log"
 
 	"github.com/cloudfoundry-community/vaultkv"
+	"github.com/jhunt/ssg/pkg/ssg/config"
 	"github.com/jhunt/ssg/pkg/ssg/vault"
 )
 
@@ -21,9 +24,11 @@ type Vault struct {
 }
 
 type Endpoint struct {
-	Prefix string
-	URL    string
-	Token  string
+	Prefix  string
+	URL     string
+	Token   string
+	CA      config.CA
+	Timeout int
 }
 
 func Configure(e Endpoint) (Vault, error) {
@@ -36,9 +41,21 @@ func Configure(e Endpoint) (Vault, error) {
 		return Vault{}, err
 	}
 
+	tlsConfig, err := e.CA.TLSConfig()
+	if err != nil {
+		return Vault{}, err
+	}
+
 	c := vaultkv.Client{
 		VaultURL:  u,
 		AuthToken: e.Token,
+
+		Client: &http.Client{
+			Timeout: time.Duration(e.Timeout) * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConfig,
+			},
+		},
 	}
 
 	log.Infof(LOG+"configuring hashicorp vault at %v, with prefix=%v", e.URL, e.Prefix)

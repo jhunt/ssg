@@ -8,8 +8,10 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jhunt/ssg/pkg/rand"
+	"github.com/jhunt/ssg/pkg/ssg/config"
 	"github.com/jhunt/ssg/pkg/ssg/provider"
 )
 
@@ -19,6 +21,8 @@ type Endpoint struct {
 	URL      string
 	Username string
 	Password string
+	CA       config.CA
+	Timeout  int
 }
 
 type Provider struct {
@@ -34,11 +38,21 @@ func Configure(e Endpoint) (Provider, error) {
 		return Provider{}, err
 	}
 
+	tlsConfig, err := e.CA.TLSConfig()
+	if err != nil {
+		return Provider{}, err
+	}
+
 	return Provider{
 		base:     base,
 		username: e.Username,
 		password: e.Password,
-		client:   http.DefaultClient,
+		client: &http.Client{
+			Timeout: time.Duration(e.Timeout) * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConfig,
+			},
+		},
 	}, nil
 }
 

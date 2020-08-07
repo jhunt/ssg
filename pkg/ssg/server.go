@@ -264,6 +264,7 @@ func NewServer(c config.Config) (*Server, error) {
 				URL:      b.Provider.WebDAV.URL,
 				Username: b.Provider.WebDAV.BasicAuth.Username,
 				Password: b.Provider.WebDAV.BasicAuth.Password,
+				CA:       b.Provider.WebDAV.CA,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("webdav bucket %v could not be configured: %s", b.Key, err)
@@ -298,6 +299,7 @@ func NewServer(c config.Config) (*Server, error) {
 					Prefix: b.Vault.Hashicorp.Prefix,
 					URL:    b.Vault.Hashicorp.URL,
 					Token:  b.Vault.Hashicorp.Token,
+					CA:     b.Vault.Hashicorp.CA,
 				})
 				if err != nil {
 					return nil, fmt.Errorf("bucket %v hashicorp vault could not be configured: %s", b.Key, err)

@@ -39,6 +39,10 @@ func (v *Vault) validate() error {
 		return fmt.Errorf("no vault prefix specified")
 	}
 
+	if v.Hashicorp.Timeout < 0 {
+		return fmt.Errorf("vault http timeout '%d' is negative", v.Hashicorp.Timeout)
+	}
+
 	role := v.Hashicorp.Role != "" && v.Hashicorp.Secret != ""
 	token := v.Hashicorp.Token != ""
 	if token && role {
