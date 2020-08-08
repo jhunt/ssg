@@ -19,7 +19,7 @@ import (
 
 type Vault struct {
 	prefix string
-	client vaultkv.Client
+	client *vaultkv.Client
 	kv     *vaultkv.KV
 }
 
@@ -46,7 +46,7 @@ func Configure(e Endpoint) (Vault, error) {
 		return Vault{}, err
 	}
 
-	c := vaultkv.Client{
+	c := &vaultkv.Client{
 		VaultURL:  u,
 		AuthToken: e.Token,
 

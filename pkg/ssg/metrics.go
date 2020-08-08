@@ -63,8 +63,8 @@ type metrics struct {
 	} `json:"transfer"`
 }
 
-func newMetric(max int) metrics {
-	m := metrics{}
+func newMetric(max int) *metrics {
+	m := &metrics{}
 	m.segments = sample.NewReservoir(max)
 	return m
 }

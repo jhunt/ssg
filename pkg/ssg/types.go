@@ -36,7 +36,7 @@ type bucket struct {
 
 	provider provider.Provider
 	vault    vault.Vault
-	metrics  metrics
+	metrics  *metrics
 }
 
 type Server struct {
@@ -54,7 +54,7 @@ type Server struct {
 	downloads map[string]*stream
 }
 
-func (s Server) bucket(key string) *bucket {
+func (s *Server) bucket(key string) *bucket {
 	for i := range s.buckets {
 		if s.buckets[i].key == key {
 			return s.buckets[i]

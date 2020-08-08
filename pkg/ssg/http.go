@@ -264,7 +264,7 @@ func (s *Server) Router(helo string) *route.Router {
 			return
 		}
 
-		m := make(map[string]metrics)
+		m := make(map[string]*metrics)
 		for _, b := range s.buckets {
 			b.metrics.Recalculate()
 			m[b.key] = b.metrics
@@ -277,7 +277,7 @@ func (s *Server) Router(helo string) *route.Router {
 			return
 		}
 
-		m := make(map[string]metrics)
+		m := make(map[string]*metrics)
 		for _, b := range s.buckets {
 			b.metrics.Reset()
 			m[b.key] = b.metrics
