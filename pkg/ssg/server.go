@@ -309,7 +309,7 @@ func NewServer(c config.Config) (*Server, error) {
 
 			case "static":
 				log.Infof(LOG+"configuring bucket %v vault backed by static, fixed keys", b.Key)
-				candidate, err := static.Configure(v.FixedKey)
+				candidate, err := static.Configure(b.Encryption, v.FixedKey)
 				if err != nil {
 					return nil, fmt.Errorf("bucket %v static vault could not be configured: %s", b.Key, err)
 				}

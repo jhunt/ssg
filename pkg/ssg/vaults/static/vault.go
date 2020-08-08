@@ -5,11 +5,13 @@ import (
 )
 
 type Static struct {
+	alg string
 	fixed vault.FixedKeySource
 }
 
-func Configure(fks vault.FixedKeySource) (Static, error) {
+func Configure(alg string, fks vault.FixedKeySource) (Static, error) {
 	return Static{
+		alg:   alg,
 		fixed: fks,
 	}, nil
 }
@@ -18,8 +20,8 @@ func (s Static) SetCipher(string, vault.Cipher) error {
 	return nil
 }
 
-func (s Static) GetCipher(alg string) (vault.Cipher, error) {
-	return s.fixed.Derive(alg, nil)
+func (s Static) GetCipher(string) (vault.Cipher, error) {
+	return s.fixed.Derive(s.alg, nil)
 }
 
 func (s Static) FixedKeyResolver() vault.FixedKeyResolver {
