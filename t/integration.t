@@ -710,24 +710,36 @@ subtest "fixed-key vault encryption" => sub { # {{{
 	$a = sha1('t/tmp/a/first/randomized/key/test');
 	$b = sha1('t/tmp/asecond/randomized/key/test');
 	isnt $a, $b, 'randomized-key encryption should generate different outputs for identical inputs';
+	$a = sha1('main.go');
+	$b = download "ssg://cluster1/base-files/asecond/randomized/key/test";
+	is $a, $b, 'randomized-key vaults can decrypt blobs from storage, on download';
 
 	upload 'ssg://cluster1/fixed-key/a/first/fixed/key/test', 'main.go';
 	upload 'ssg://cluster1/fixed-key/asecond/fixed/key/test', 'main.go';
 	$a = sha1('t/tmp/a/first/fixed/key/test');
 	$b = sha1('t/tmp/asecond/fixed/key/test');
 	is $a, $b, 'fixed-key encryption should generate identical outputs for identical inputs';
+	$a = sha1('main.go');
+	$b = download "ssg://cluster1/fixed-key/asecond/fixed/key/test";
+	is $a, $b, 'fixed-key vaults can decrypt blobs from storage, on download';
 
 	upload 'ssg://cluster1/provided-key/a/first/provided/key/test', 'main.go';
 	upload 'ssg://cluster1/provided-key/asecond/provided/key/test', 'main.go';
 	$a = sha1('t/tmp/a/first/provided/key/test');
 	$b = sha1('t/tmp/asecond/provided/key/test');
 	is $a, $b, 'fixed-key encryption can take a key/iv, rather than deriving it';
+	$a = sha1('main.go');
+	$b = download "ssg://cluster1/provided-key/asecond/provided/key/test";
+	is $a, $b, 'fixed-key vaults with provided keys can decrypt blobs from storage, on download';
 
 	upload 'ssg://cluster1/static-vault/a/first/static/key/test', 'main.go';
 	upload 'ssg://cluster1/static-vault/asecond/static/key/test', 'main.go';
 	$a = sha1('t/tmp/a/first/static/key/test');
 	$b = sha1('t/tmp/asecond/static/key/test');
 	is $a, $b, 'static vaults work without real backing credentials storage';
+	$a = sha1('main.go');
+	$b = download "ssg://cluster1/static-vault/asecond/static/key/test";
+	is $a, $b, 'static vaults can decrypt blobs from storage, on download';
 };
 # }}}
 
