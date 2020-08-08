@@ -9,42 +9,17 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-func (v Vault) Cipher(alg string) (Cipher, error) {
-	if !v.FixedKey.Enabled {
-		c := Cipher{Algorithm: alg}
-
-		algorithm, _ := parse(alg)
-		switch algorithm {
-		case "aes128":
-			c.Key = make([]byte, 16)
-			c.IV = make([]byte, aes.BlockSize)
-
-		case "aes192":
-			c.Key = make([]byte, 24)
-			c.IV = make([]byte, aes.BlockSize)
-
-		case "aes256":
-			c.Key = make([]byte, 32)
-			c.IV = make([]byte, aes.BlockSize)
-
-		default:
-			return Cipher{}, fmt.Errorf("unrecognized encryption algorithm: '%s'", alg)
+func (fks FixedKeySource) Derive(alg string, resolve func(string) ([]byte, error)) (Cipher, error) {
+	if resolve == nil {
+		resolve = func(in string) ([]byte, error) {
+			return []byte(in), nil
 		}
-
-		if _, err := rand.Read(c.Key); err != nil {
-			return Cipher{}, fmt.Errorf("failed to generate %s encryption key: %s", alg, err)
-		}
-		if _, err := rand.Read(c.IV); err != nil {
-			return Cipher{}, fmt.Errorf("failed to generate %s initialization vector: %s", alg, err)
-		}
-
-		return c, nil
 	}
 
 	c := Cipher{Algorithm: alg}
 	var key, salt []byte
-	if v.FixedKey.PBKDF2 != "" {
-		k, err := v.Provider.Get(v.FixedKey.PBKDF2)
+	if fks.PBKDF2 != "" {
+		k, err := resolve(fks.PBKDF2)
 		if err != nil {
 			return Cipher{}, err
 		}
@@ -64,10 +39,21 @@ func (v Vault) Cipher(alg string) (Cipher, error) {
 			return c, nil
 		}
 
-		if v.FixedKey.Literal.AES128.Key != "" && v.FixedKey.Literal.AES128.IV != "" {
-			key, iv, err := deriveLiteral(v, v.FixedKey.Literal.AES128.Key, 16, v.FixedKey.Literal.AES128.IV, aes.BlockSize)
+		if fks.Literal.AES128.Key != "" && fks.Literal.AES128.IV != "" {
+			keysz := 16
+			key, err := resolve(fks.Literal.AES128.Key)
 			if err != nil {
 				return Cipher{}, err
+			}
+			iv, err := resolve(fks.Literal.AES128.IV)
+			if err != nil {
+				return Cipher{}, err
+			}
+			if len(key) != keysz {
+				return Cipher{}, fmt.Errorf("insufficient key size (%d bytes): want exactly %d bytes", len(key), keysz)
+			}
+			if len(iv) != aes.BlockSize {
+				return Cipher{}, fmt.Errorf("insufficient initialization vector size (%d bytes): want exactly %d bytes", len(iv), aes.BlockSize)
 			}
 			c.Key = key
 			c.IV = iv
@@ -81,10 +67,21 @@ func (v Vault) Cipher(alg string) (Cipher, error) {
 			return c, nil
 		}
 
-		if v.FixedKey.Literal.AES192.Key != "" && v.FixedKey.Literal.AES192.IV != "" {
-			key, iv, err := deriveLiteral(v, v.FixedKey.Literal.AES192.Key, 24, v.FixedKey.Literal.AES192.IV, aes.BlockSize)
+		if fks.Literal.AES192.Key != "" && fks.Literal.AES192.IV != "" {
+			keysz := 24
+			key, err := resolve(fks.Literal.AES192.Key)
 			if err != nil {
 				return Cipher{}, err
+			}
+			iv, err := resolve(fks.Literal.AES192.IV)
+			if err != nil {
+				return Cipher{}, err
+			}
+			if len(key) != keysz {
+				return Cipher{}, fmt.Errorf("insufficient key size (%d bytes): want exactly %d bytes", len(key), keysz)
+			}
+			if len(iv) != aes.BlockSize {
+				return Cipher{}, fmt.Errorf("insufficient initialization vector size (%d bytes): want exactly %d bytes", len(iv), aes.BlockSize)
 			}
 			c.Key = key
 			c.IV = iv
@@ -98,10 +95,21 @@ func (v Vault) Cipher(alg string) (Cipher, error) {
 			return c, nil
 		}
 
-		if v.FixedKey.Literal.AES256.Key != "" && v.FixedKey.Literal.AES256.IV != "" {
-			key, iv, err := deriveLiteral(v, v.FixedKey.Literal.AES256.Key, 32, v.FixedKey.Literal.AES256.IV, aes.BlockSize)
+		if fks.Literal.AES256.Key != "" && fks.Literal.AES256.IV != "" {
+			keysz := 32
+			key, err := resolve(fks.Literal.AES256.Key)
 			if err != nil {
 				return Cipher{}, err
+			}
+			iv, err := resolve(fks.Literal.AES256.IV)
+			if err != nil {
+				return Cipher{}, err
+			}
+			if len(key) != keysz {
+				return Cipher{}, fmt.Errorf("insufficient key size (%d bytes): want exactly %d bytes", len(key), keysz)
+			}
+			if len(iv) != aes.BlockSize {
+				return Cipher{}, fmt.Errorf("insufficient initialization vector size (%d bytes): want exactly %d bytes", len(iv), aes.BlockSize)
 			}
 			c.Key = key
 			c.IV = iv
@@ -115,22 +123,37 @@ func (v Vault) Cipher(alg string) (Cipher, error) {
 	return Cipher{}, fmt.Errorf("unable to derive %s fixed cipher: no methods left to try", algorithm)
 }
 
-func deriveLiteral(v Vault, keyp string, keysz int, ivp string, ivsz int) ([]byte, []byte, error) {
-	key, err := v.Provider.Get(keyp)
-	if err != nil {
-		return nil, nil, err
+func (v Vault) Cipher(alg string) (Cipher, error) {
+	if v.FixedKey.Enabled {
+		return v.FixedKey.Derive(alg, v.Provider.FixedKeyResolver())
 	}
 
-	iv, err := v.Provider.Get(ivp)
-	if err != nil {
-		return nil, nil, err
+	c := Cipher{Algorithm: alg}
+
+	algorithm, _ := parse(alg)
+	switch algorithm {
+	case "aes128":
+		c.Key = make([]byte, 16)
+		c.IV = make([]byte, aes.BlockSize)
+
+	case "aes192":
+		c.Key = make([]byte, 24)
+		c.IV = make([]byte, aes.BlockSize)
+
+	case "aes256":
+		c.Key = make([]byte, 32)
+		c.IV = make([]byte, aes.BlockSize)
+
+	default:
+		return Cipher{}, fmt.Errorf("unrecognized encryption algorithm: '%s'", alg)
 	}
 
-	if len(key) != keysz {
-		return nil, nil, fmt.Errorf("insufficient key size (%d bytes): want exactly %d bytes", len(key), keysz)
+	if _, err := rand.Read(c.Key); err != nil {
+		return Cipher{}, fmt.Errorf("failed to generate %s encryption key: %s", alg, err)
 	}
-	if len(iv) != ivsz {
-		return nil, nil, fmt.Errorf("insufficient initialization vector size (%d bytes): want exactly %d bytes", len(key), ivsz)
+	if _, err := rand.Read(c.IV); err != nil {
+		return Cipher{}, fmt.Errorf("failed to generate %s initialization vector: %s", alg, err)
 	}
-	return key, iv, nil
+
+	return c, nil
 }

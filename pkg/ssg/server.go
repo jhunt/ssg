@@ -21,6 +21,7 @@ import (
 
 	"github.com/jhunt/ssg/pkg/ssg/vault"
 	"github.com/jhunt/ssg/pkg/ssg/vaults/hashicorp"
+	"github.com/jhunt/ssg/pkg/ssg/vaults/static"
 )
 
 func (s *Server) startUpload(to *url.URL) (*stream, string, error) {
@@ -303,6 +304,14 @@ func NewServer(c config.Config) (*Server, error) {
 				})
 				if err != nil {
 					return nil, fmt.Errorf("bucket %v hashicorp vault could not be configured: %s", b.Key, err)
+				}
+				v.Provider = candidate
+
+			case "static":
+				log.Infof(LOG+"configuring bucket %v vault backed by static, fixed keys", b.Key)
+				candidate, err := static.Configure(v.FixedKey)
+				if err != nil {
+					return nil, fmt.Errorf("bucket %v static vault could not be configured: %s", b.Key, err)
 				}
 				v.Provider = candidate
 			}

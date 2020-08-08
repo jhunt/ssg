@@ -27,29 +27,36 @@ func validEncryption(alg string) bool {
 }
 
 func (v *Vault) validate() error {
-	if v.Kind != "hashicorp" {
+	switch v.Kind {
+	case "static":
+		if !v.FixedKey.Enabled {
+			return fmt.Errorf("you must enable fixed keys to use the static vault backend")
+		}
+
+	case "hashicorp":
+		if v.Hashicorp.URL == "" {
+			return fmt.Errorf("no vault url specified")
+		}
+
+		if v.Hashicorp.Prefix == "" {
+			return fmt.Errorf("no vault prefix specified")
+		}
+
+		if v.Hashicorp.Timeout < 0 {
+			return fmt.Errorf("vault http timeout '%d' is negative", v.Hashicorp.Timeout)
+		}
+
+		role := v.Hashicorp.Role != "" && v.Hashicorp.Secret != ""
+		token := v.Hashicorp.Token != ""
+		if token && role {
+			return fmt.Errorf("token and approle authentication are mutually exclusive")
+		}
+		if !token && !role {
+			return fmt.Errorf("no authentication mechanism defined")
+		}
+
+	default:
 		return fmt.Errorf("unrecognized vault kind '%s'", v.Kind)
-	}
-
-	if v.Hashicorp.URL == "" {
-		return fmt.Errorf("no vault url specified")
-	}
-
-	if v.Hashicorp.Prefix == "" {
-		return fmt.Errorf("no vault prefix specified")
-	}
-
-	if v.Hashicorp.Timeout < 0 {
-		return fmt.Errorf("vault http timeout '%d' is negative", v.Hashicorp.Timeout)
-	}
-
-	role := v.Hashicorp.Role != "" && v.Hashicorp.Secret != ""
-	token := v.Hashicorp.Token != ""
-	if token && role {
-		return fmt.Errorf("token and approle authentication are mutually exclusive")
-	}
-	if !token && !role {
-		return fmt.Errorf("no authentication mechanism defined")
 	}
 
 	return nil

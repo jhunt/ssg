@@ -75,6 +75,18 @@ buckets:
       fs:
         root: /srv/files
 
+  - key: static-vault
+    name: Static Fixed Key
+    vault:
+      kind: static
+      fixedKey:
+        enabled: true
+        pbkdf2: ACh2aighiepohkavaeR7ahroopoh3shaceiyooch2reele2einethuucia5duzab
+    provider:
+      kind: fs
+      fs:
+        root: /srv/files
+
   - key: provided-key
     name: Fixed Key Storage (Provided)
     description: Where the Key and IV are provided

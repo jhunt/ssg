@@ -77,26 +77,6 @@ func (v Vault) SetCipher(id string, c vault.Cipher) error {
 	return err
 }
 
-func (v Vault) Get(id string) ([]byte, error) {
-	key := "value"
-	if strings.Contains(id, ":") {
-		l := strings.Split(id, ":")
-		id = strings.Join(l[0:len(l)-1], ":")
-		key = l[len(l)-1]
-	}
-
-	log.Debugf(LOG+"retrieving raw secret path=%v, key=%v", filepath.Join(v.prefix, id), key)
-	in := make(map[string]string)
-	_, err := v.kv.Get(filepath.Join(v.prefix, id), &in, nil)
-	if err != nil {
-		return nil, err
-	}
-	if v, ok := in[key]; ok {
-		return hex.DecodeString(v)
-	}
-	return nil, fmt.Errorf("key %v not found in path %v", key, id)
-}
-
 func (v Vault) GetCipher(id string) (vault.Cipher, error) {
 	log.Debugf(LOG+"retrieving secret %v", id)
 
@@ -125,6 +105,28 @@ func (v Vault) GetCipher(id string) (vault.Cipher, error) {
 	}
 
 	return c, nil
+}
+
+func (v Vault) FixedKeyResolver() vault.FixedKeyResolver {
+	return func(path string) ([]byte, error) {
+		key := "value"
+		if strings.Contains(path, ":") {
+			l := strings.Split(path, ":")
+			path = strings.Join(l[0:len(l)-1], ":")
+			key = l[len(l)-1]
+		}
+
+		log.Debugf(LOG+"retrieving raw secret path=%v, key=%v", filepath.Join(v.prefix, path), key)
+		in := make(map[string]string)
+		_, err := v.kv.Get(filepath.Join(v.prefix, path), &in, nil)
+		if err != nil {
+			return nil, err
+		}
+		if v, ok := in[key]; ok {
+			return hex.DecodeString(v)
+		}
+		return nil, fmt.Errorf("key %v not found in path %v", key, path)
+	}
 }
 
 func (v Vault) Delete(id string) error {
