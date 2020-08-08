@@ -207,7 +207,7 @@ func (s *Server) Router(helo string) *route.Router {
 			Segments     int   `json:"segments"`
 			Compressed   int64 `json:"compressed"`
 			Uncompressed int64 `json:"uncompressed"`
-			Sent         int   `json:"sent",omitempty`
+			Sent         int   `json:"sent,omitempty"`
 		}{
 			Segments:     upstream.segments,
 			Compressed:   upstream.compressed.total(),
