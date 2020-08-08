@@ -12,10 +12,16 @@ type Vault struct {
 }
 
 type VaultProvider interface {
-	Get(string) ([]byte, error)
+	FixedKeyResolver() FixedKeyResolver
 	SetCipher(string, Cipher) error
 	GetCipher(string) (Cipher, error)
 	Delete(string) error
+}
+
+type FixedKeyResolver func (in string) ([]byte, error)
+
+var PassThroughResolver FixedKeyResolver = func (in string) ([]byte, error) {
+	return []byte(in), nil
 }
 
 // FixedKeySource represents operator configuration for the

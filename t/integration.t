@@ -722,6 +722,12 @@ subtest "fixed-key vault encryption" => sub { # {{{
 	$a = sha1('t/tmp/a/first/provided/key/test');
 	$b = sha1('t/tmp/asecond/provided/key/test');
 	is $a, $b, 'fixed-key encryption can take a key/iv, rather than deriving it';
+
+	upload 'ssg://cluster1/static-vault/a/first/static/key/test', 'main.go';
+	upload 'ssg://cluster1/static-vault/asecond/static/key/test', 'main.go';
+	$a = sha1('t/tmp/a/first/static/key/test');
+	$b = sha1('t/tmp/asecond/static/key/test');
+	is $a, $b, 'static vaults work without real backing credentials storage';
 };
 # }}}
 
