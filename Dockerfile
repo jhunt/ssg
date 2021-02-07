@@ -3,7 +3,7 @@ RUN apt-get update \
  && apt-get install -y ca-certificates
 # /etc/ssl/certs/ca-certificates.crt
 
-FROM golang:1.13 AS build
+FROM golang:1.15 AS build
 
 WORKDIR /app
 COPY go.mod .
