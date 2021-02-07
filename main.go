@@ -65,7 +65,7 @@ func main() {
 	}
 
 	if opts.Help {
-		fmt.Printf("ssg - The SHIELD Storage Gateway\n\n")
+		fmt.Printf("ssg - The Secure Storage Gateway\n\n")
 		fmt.Printf("Options\n")
 		fmt.Printf("  -h, --help          Show this help screen.\n")
 		fmt.Printf("  -v, --version       Display the SSG version.\n")

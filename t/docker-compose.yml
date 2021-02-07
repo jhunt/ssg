@@ -1,7 +1,7 @@
 #
 # This Docker Compose recipe is meant for spinning up the
 # accompanying data services required to perform development
-# and engineering work against SHIELD Storage Gateway software.
+# and engineering work against Secure Storage Gateway software.
 #
 # It is not meant to be used directly in production, although
 # it does act as a decent template for what we will need
