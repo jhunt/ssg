@@ -5,7 +5,7 @@ import (
 )
 
 type Static struct {
-	alg string
+	alg   string
 	fixed vault.FixedKeySource
 }
 

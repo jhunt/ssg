@@ -18,9 +18,9 @@ type VaultProvider interface {
 	Delete(string) error
 }
 
-type FixedKeyResolver func (in string) ([]byte, error)
+type FixedKeyResolver func(in string) ([]byte, error)
 
-var PassThroughResolver FixedKeyResolver = func (in string) ([]byte, error) {
+var PassThroughResolver FixedKeyResolver = func(in string) ([]byte, error) {
 	return []byte(in), nil
 }
 
