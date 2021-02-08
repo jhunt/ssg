@@ -42,9 +42,6 @@ func (f Provider) Upload(relpath string) (provider.Uploader, error) {
 	}
 	relpath = filepath.Clean(relpath)
 	abspath := filepath.Join(f.Root, relpath)
-	if _, err := os.Stat(abspath); err == nil {
-		return nil, fmt.Errorf("path '%s' already exists", relpath)
-	}
 
 	if err := os.MkdirAll(path.Dir(abspath), 0777); err != nil {
 		return nil, err
