@@ -34,7 +34,7 @@ sub vault_secret {
 
 sub maybe_json {
 	my ($raw) = @_;
-	return eval { return decode_json($raw) } or undef;
+	return eval { return decode_json($raw) } || undef;
 }
 
 sub atleast {
