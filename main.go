@@ -65,7 +65,19 @@ func main() {
 	}
 
 	if opts.Help {
-		fmt.Printf("ssg - The Secure Storage Gateway\n\n")
+		fmt.Printf("@C{ssg} - The @R{Secure} Storage Gateway\n\n")
+		switch command {
+		case "server", "ping", "control buckets":
+			fmt.Printf("USAGE: @C{ssg} @M{%s}\n\n", command)
+		case "control upload", "control download", "control expunge":
+			fmt.Printf("USAGE: @C{ssg} @M{%s} @Y{REMOTE-PATH}\n\n", command)
+		case "stream get", "stream put":
+			fmt.Printf("USAGE: @C{ssg} @M{%s} @Y{REMOTE-ID}\n\n", command)
+		case "upload":
+			fmt.Printf("USAGE: @C{ssg} @M{%s} @Y{REMOTE-PATH} < @W{LOCAL-PATH}\n\n", command)
+		case "download":
+			fmt.Printf("USAGE: @C{ssg} @M{%s} @Y{REMOTE-PATH} > @W{LOCAL-PATH}\n\n", command)
+		}
 		fmt.Printf("Options\n")
 		fmt.Printf("  -h, --help          Show this help screen.\n")
 		fmt.Printf("  -v, --version       Display the SSG version.\n")
@@ -80,6 +92,20 @@ func main() {
 		fmt.Printf("  -c, --config        Path to the SSG configuration file (YAML!)\n")
 		fmt.Printf("                      Can be set via the @W{$SSG_CONFIG} env var.\n")
 		fmt.Printf("\n")
+		fmt.Printf("  -u, --url           URL to the SSG gateway to contact.\n")
+		fmt.Printf("                      Can be set via the @W{$SSG_URL} env var.\n")
+		fmt.Printf("\n")
+
+		switch command {
+		case "control buckets", "control upload", "control download", "control delete", "control expunge", "upload", "download":
+			fmt.Printf("  -t, --token         Control Token for authentication.\n")
+			fmt.Printf("                      Can be set via the @W{$SSG_CONTROL_TOKEN} env var.\n")
+			fmt.Printf("\n")
+		case "stream get", "stream put":
+			fmt.Printf("  -t, --token         Stream Token for authentication.\n")
+			fmt.Printf("                      Can be set via the @W{$SSG_STREAM_TOKEN} env var.\n")
+			fmt.Printf("\n")
+		}
 		os.Exit(0)
 	}
 
